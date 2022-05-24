@@ -1,0 +1,235 @@
+﻿<Window x:Class="TwitchRewardSlideshow.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wpf="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        mc:Ignorable="d"
+        Title="MainWindow"
+        MinHeight="513" MinWidth="912"
+        Height="720" Width="1280"
+        Background="#2D2A2E">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Dictionaries/OtherButtonStyle.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="20*" />
+                <ColumnDefinition Width="100*" />
+                <ColumnDefinition Width="100*" />
+                <ColumnDefinition Width="100*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="20*" />
+                <RowDefinition Height="100*" />
+                <RowDefinition Height="100*" />
+                <RowDefinition Height="100*" />
+                <RowDefinition Height="100*" />
+                <RowDefinition Height="100*" />
+                <RowDefinition Height="20*" />
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="1"
+                  Grid.RowSpan="5"
+                  Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="50*" />
+                    <RowDefinition Height="50*" />
+                    <RowDefinition Height="50*" />
+                    <RowDefinition Height="50*" />
+                    <RowDefinition Height="50*" />
+                    <RowDefinition Height="20*" />
+                </Grid.RowDefinitions>
+                <Label
+                    Name="HaveMoreImageText"
+                    Grid.Row="0"
+                    Grid.RowSpan="5"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Foreground="White"
+                    Content="No hay más imagenes que aprobar" />
+                <Image
+                    Name="PreviewImage"
+                    Height="350.8"
+                    Width="248"
+                    Grid.Row="0"
+                    Grid.RowSpan="5" />
+                <Label
+                    Name="User"
+                    Grid.Row="5"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Foreground="White"
+                    Content="Del usuario: ..." />
+            </Grid>
+            <Grid Grid.Row="1"
+                  Grid.RowSpan="2"
+                  Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30*" />
+                    <RowDefinition Height="70*" />
+                    <RowDefinition Height="30*" />
+                    <RowDefinition Height="70*" />
+                    <RowDefinition Height="30*" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50*" />
+                    <ColumnDefinition Width="100*" />
+                    <ColumnDefinition Width="100*" />
+                    <ColumnDefinition Width="50*" />
+                </Grid.ColumnDefinitions>
+                <Button
+                    Name="AcceptButton"
+                    Style="{DynamicResource acceptButton}"
+                    Content="Aceptar"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Grid.ColumnSpan="2"
+                    Background="#71FF46"
+                    Click="OnAcceptImage">
+                    <Button.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.MergedDictionaries>
+                                <ResourceDictionary Source="Dictionaries/AcceptButtonStyle.xaml" />
+                            </ResourceDictionary.MergedDictionaries>
+                        </ResourceDictionary>
+                    </Button.Resources>
+                </Button>
+                <Button Content="Denegar"
+                        Style="{DynamicResource denyButton}"
+                        Grid.Row="3"
+                        Grid.Column="1"
+                        Grid.ColumnSpan="2"
+                        Background="#FF6269"
+                        Click="OnRejectImage">
+                    <Button.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.MergedDictionaries>
+                                <ResourceDictionary Source="Dictionaries/DenyButtonStyle.xaml" />
+                            </ResourceDictionary.MergedDictionaries>
+                        </ResourceDictionary>
+                    </Button.Resources>
+                </Button>
+            </Grid>
+            <Grid Grid.Row="3"
+                  Grid.RowSpan="2"
+                  Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="10*" />
+                    <RowDefinition Height="35*" />
+                    <RowDefinition Height="50*" />
+                    <RowDefinition Height="10*" />
+                    <RowDefinition Height="35*" />
+                    <RowDefinition Height="50*" />
+                    <RowDefinition Height="10*" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50*" />
+                    <ColumnDefinition Width="100*" />
+                    <ColumnDefinition Width="100*" />
+                    <ColumnDefinition Width="50*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Name="BufferPathText"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Grid.ColumnSpan="2"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    FontSize="10"
+                    TextWrapping="Wrap"
+                    Foreground="White">
+                    C:\
+                </TextBlock>
+                <Button Content="Carpeta de imagenes"
+                        Style="{DynamicResource otherButton}"
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Grid.ColumnSpan="2"
+                        Click="ClickDefineMainFolder">
+                </Button>
+                <TextBlock
+                    Name="DefaultImageText"
+                    Grid.Row="4"
+                    Grid.Column="1"
+                    Grid.ColumnSpan="2"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    FontSize="10"
+                    TextWrapping="Wrap"
+                    Foreground="White">
+                    C:\
+                </TextBlock>
+                <Button Content="Imagenes por defecto"
+                        Style="{DynamicResource otherButton}"
+                        Grid.Row="5"
+                        Grid.Column="1"
+                        Grid.ColumnSpan="2"
+                        Click="ClickDefineDefaultImagesFolder">
+                </Button>
+            </Grid>
+            <Grid Grid.Row="5"
+                  Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="10*" />
+                    <RowDefinition Height="35*" />
+                    <RowDefinition Height="50*" />
+                    <RowDefinition Height="10*" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50*" />
+                    <ColumnDefinition Width="100*" />
+                    <ColumnDefinition Width="5*" />
+                    <ColumnDefinition Width="100*" />
+                    <ColumnDefinition Width="50*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Name="RewardStatusText"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontSize="9"
+                    TextWrapping="Wrap"
+                    Foreground="Red">
+                    Reward no disponible
+                </TextBlock>
+                <Button Content="Recargar Reward"
+                        FontSize="11"
+                        Style="{DynamicResource otherButton}"
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Click="ClickReloadReward">
+                </Button>
+                <TextBlock
+                    Name="ChatStatusText"
+                    Grid.Row="1"
+                    Grid.Column="3"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontSize="9"
+                    TextWrapping="Wrap"
+                    Foreground="Red">
+                    Chat no disponible
+                </TextBlock>
+                <Button Content="Recargar Chat"
+                        FontSize="11"
+                        Style="{DynamicResource otherButton}"
+                        Grid.Row="2"
+                        Grid.Column="3"
+                        Click="ClickReloadChat">
+                </Button>
+            </Grid>
+            <wpf:WebView2
+                Name="WebView"
+                Grid.Row="0"
+                Grid.RowSpan="7"
+                Grid.Column="3">
+            </wpf:WebView2>
+        </Grid>
+    </Grid>
+</Window>
