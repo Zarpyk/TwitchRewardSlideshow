@@ -27,7 +27,7 @@ namespace TwitchRewardSlideshow {
 
         public const string devName = "GuerreroBit";
         public const string productName = "TwitchRewardSlideshow";
-        public const string version = "1.4-pre1";
+        public const string version = "1.4-pre2";
 
         public static event Action OnNewImageDownloaded;
 
