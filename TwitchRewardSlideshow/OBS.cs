@@ -29,6 +29,7 @@ namespace TwitchRewardSlideshow {
                 obs.Connect(appConfig.obsInfo.obsIP, appConfig.obsInfo.obsPass);
                 SetupTimer();
                 intertalBuffer = App.config.Get<ImageBuffer>();
+                //TODO Create source
                 sourceSettings = obs.GetSourceSettings(appConfig.obsInfo.gallerySourceName);
             } catch {
                 App.ShowError("OBS", false);

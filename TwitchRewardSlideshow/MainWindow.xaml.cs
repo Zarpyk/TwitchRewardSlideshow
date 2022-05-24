@@ -294,7 +294,7 @@ namespace TwitchRewardSlideshow {
                 string link = "https://id.twitch.tv/oauth2/authorize?response_type=token&";
                 link += "client_id=eg9uc3o0ngoo7ohl3n1a3fjtpoi1j8&";
                 link += "redirect_uri=http://localhost:3000&";
-                link += HttpUtility.UrlEncode("scope=channel:read:redemptions");
+                link += "scope=channel%3Aread%3Aredemptions";
                 WebView.Source = new Uri(link);
                 WebView.SourceChanged += WebViewOnSourceChanged;
                 //https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=eg9uc3o0ngoo7ohl3n1a3fjtpoi1j8&redirect_uri=http://localhost:3000&scope=channel:read:redemptions
