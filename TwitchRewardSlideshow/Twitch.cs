@@ -60,9 +60,9 @@ namespace TwitchRewardSlideshow {
             App.ShowError("Twich");
         }
 
-        public void SendMesage(string msg) {
+        public void SendMesage(string msg, bool withPrefix = true) {
             client.SendMessage(App.config.Get<TwitchConfig>().destinationChannel,
-                App.config.Get<AppConfig>().appPrefix + msg);
+                (withPrefix ? App.config.Get<AppConfig>().appPrefix : "") + msg);
         }
 
         private void OnClientLog(object sender, OnLogArgs e) {
@@ -83,7 +83,7 @@ namespace TwitchRewardSlideshow {
             pubSubClient.OnPubSubServiceConnected += OnPubSubServiceConnected;
             pubSubClient.OnPubSubServiceClosed += OnPubSubServiceClosed;
             pubSubClient.OnPubSubServiceError += OnPubSubServiceError;
-            
+
             pubSubClient.OnChannelPointsRewardRedeemed += DebugReward;
         }
 

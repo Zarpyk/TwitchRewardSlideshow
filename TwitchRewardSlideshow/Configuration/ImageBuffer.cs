@@ -28,13 +28,6 @@ namespace TwitchRewardSlideshow.Configuration {
             this.downloadLink = downloadLink;
         }
 
-        internal void MovePath(string destinationDirectory) {
-            Directory.CreateDirectory(destinationDirectory);
-            string destination = Path.Combine(destinationDirectory, Path.GetFileName(path)!);
-            File.Move(path!, destination);
-            path = destination;
-        }
-
         public override bool Equals(object obj) {
             return obj is ImageInfo item && id.Equals(item.id);
         }

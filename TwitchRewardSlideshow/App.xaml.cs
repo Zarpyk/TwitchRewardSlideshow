@@ -34,7 +34,7 @@ namespace TwitchRewardSlideshow {
         private static ConsoleManager consoleManager;
 
         private Timer imageTimer;
-        private const int timerInterval = 5000;
+        private const int timerInterval = 1000;
 
         private MainWindow window;
 
@@ -97,7 +97,7 @@ namespace TwitchRewardSlideshow {
             twitch = new Twitch();
             twitch.pubSubClient.OnChannelPointsRewardRedeemed += SortReward;
             twitch.client.OnChatCommandReceived += SortReward;
-            twitch.client.OnLog += SortReward;
+            //twitch.client.OnLog += SortReward;
         }
 
         private void SetupOBS() {
@@ -141,46 +141,21 @@ namespace TwitchRewardSlideshow {
 
         private void ChangeImagesFolder() {
             ImageBuffer buffer = config.Get<ImageBuffer>();
-            AppConfig appConfig = config.Get<AppConfig>();
             if (buffer.exclusiveImagesQueue.Count > 0) {
                 //Si no hay ya una exclusiva o la exclusiva no es el por defecto
                 if (buffer.activeExclusiveImage == null) {
                     //Activa un exclusivo
                     ImageInfo exclusiveImage = buffer.exclusiveImagesQueue.Dequeue();
-                    exclusiveImage.MovePath(appConfig.imageFolder);
                     buffer.activeExclusiveImage = exclusiveImage;
-                    RemoveActiveImages(ref buffer, appConfig);
                     obs.UpdateImageBuffer(buffer);
-                } /*else { //Si hay una exclusiva activa
-                    //Quitar las imagenes de activo en caso de que haya por algun error
-                    RemoveActiveImages(ref buffer, appConfig);
-                }*/
+                }
             } else {
                 //Quita el por defecto
                 if (buffer.activeExclusiveImage == null) {
-                    UseActiveImages(ref buffer, appConfig);
                     obs.UpdateImageBuffer(buffer);
-                } /*else { //Hay imagen exclusiva
-                    //Quitar las imagenes de activo en caso de que haya por algun error
-                    RemoveActiveImages(ref buffer, appConfig);
-                }*/
+                }
             }
             config.Set(buffer);
-        }
-
-        private static void RemoveActiveImages(ref ImageBuffer buffer, AppConfig appConfig) {
-            foreach (ImageInfo info in buffer.activeImages.Where(info =>
-                         appConfig.imageFolder.Equals(Path.GetDirectoryName(info.path)))) {
-                info.MovePath(Path.Combine(appConfig.imageFolder, appConfig.acceptedImageFolder));
-            }
-        }
-
-        private void UseActiveImages(ref ImageBuffer buffer, AppConfig appConfig) {
-            if (buffer.activeImages.Count == 0) return;
-            foreach (ImageInfo info in buffer.activeImages.Where(info =>
-                         !appConfig.imageFolder.Equals(Path.GetDirectoryName(info.path)))) {
-                info.MovePath(appConfig.imageFolder);
-            }
         }
 
         private void SortReward(object sender, OnChatCommandReceivedArgs e) {
@@ -190,7 +165,9 @@ namespace TwitchRewardSlideshow {
             switch (e.Command.CommandText) {
                 case "add": {
                     string[] arg = e.Command.ArgumentsAsString.Split(':', 2);
-                    foreach (RewardConfig reward in config.Get<TwitchConfig>().rewards.Where(x => x.title == arg[0])) {
+                    foreach (RewardConfig reward in App.config.Get<TwitchConfig>().rewards.Where(x =>
+                                 string.Equals(x.title,
+                                     arg[0], StringComparison.InvariantCultureIgnoreCase))) {
                         ImageInfo imageInfo = InitImageInfo(reward, arg[1], chatMessage.DisplayName);
                         StartDownloadImage(imageInfo);
                     }
@@ -216,6 +193,19 @@ namespace TwitchRewardSlideshow {
                 case "help": {
                     twitch.SendMesage("https://github.com/GuerreroBit/TwitchRewardSlideshow/blob" +
                                       "/master/README.md#commands");
+                    break;
+                }
+                case "test": {
+                    if (chatMessage.UserId != "126707119") return;
+                    twitch.SendMesage(
+                        "!add Test Poster:https://media.discordapp.net/attachments/960637692348072027/977671768045137960/unknown.png",
+                        false);
+                    twitch.SendMesage(
+                        "!add Test Poster:https://gyazo.com/0915089a6ccd7093eb2191091f7da67e", false);
+                    twitch.SendMesage(
+                        "!add Test Poster:https://imgur.com/mS8VUB6", false);
+                    twitch.SendMesage(
+                        "!add Test Poster:https://imgur.com/gallery/RdmEsxR", false);
                     break;
                 }
             }

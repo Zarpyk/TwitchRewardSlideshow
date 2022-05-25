@@ -131,16 +131,22 @@ namespace TwitchRewardSlideshow {
             ImageBuffer buffer = App.config.Get<ImageBuffer>();
             if (buffer.toCheckImages.Count == 0) return;
             ImageInfo imageInfo = App.config.Get<ImageBuffer>().toCheckImages.Dequeue();
-            if (ImageUtilities.GetFileExtension(new Uri(imageInfo.downloadLink)) == ".gif") {
-                AnimationBehavior.SetSourceUri(PreviewImage, new Uri(imageInfo.path));
-            } else {
-                PreviewImage.Source = BitmapFromUri(new Uri(imageInfo.path));
+            try {
+                if (Path.GetExtension(imageInfo.path) == ".gif") {
+                    AnimationBehavior.SetSourceUri(PreviewImage, new Uri(imageInfo.path));
+                } else {
+                    PreviewImage.Source = BitmapFromUri(new Uri(imageInfo.path!));
+                }
+            } catch (Exception) {
+                PreviewImage.Source = null;
+                if (File.Exists(imageInfo.path)) File.Delete(imageInfo.path);
+                CheckNextImage();
             }
             User.Content = $"Del usuario: {imageInfo.user}";
         }
 
         public static ImageSource BitmapFromUri(Uri source) {
-            var bitmap = new BitmapImage();
+            BitmapImage bitmap = new();
             bitmap.BeginInit();
             bitmap.UriSource = source;
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
@@ -153,7 +159,7 @@ namespace TwitchRewardSlideshow {
             if (buffer.toCheckImages.Count == 0) return null;
             ImageInfo imageInfo = buffer.toCheckImages.Dequeue();
             AppConfig config = App.config.Get<AppConfig>();
-            imageInfo.MovePath(Path.Combine(config.imageFolder, config.acceptedImageFolder));
+            //imageInfo.MovePath(Path.Combine(config.imageFolder, config.acceptedImageFolder));
             if (imageInfo.exclusive) buffer.exclusiveImagesQueue.Enqueue(imageInfo);
             else buffer.activeImages.Add(imageInfo);
             App.config.Set(buffer);

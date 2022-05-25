@@ -82,11 +82,6 @@ namespace TwitchRewardSlideshow {
 
         private void RefreshSlideTime() {
             AppConfig appConfig = App.config.Get<AppConfig>();
-            /*string sourceName = appConfig.obsInfo.gallerySourceName;
-            SourceSettings sourceSettings = obs.GetSourceSettings(sourceName);
-            SlideshowSettings settings =
-                JsonConvert.DeserializeObject<SlideshowSettings>(sourceSettings.Settings.ToString());
-            obsTimer.Interval = settings!.slide_time;*/
             obsTimer.Interval = appConfig.obsInfo.slideTimeInMilliseconds;
         }
 
