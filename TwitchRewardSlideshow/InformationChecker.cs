@@ -27,8 +27,9 @@ namespace TwitchRewardSlideshow {
 
         private static void CheckOBSWebSocket(ref AppConfig appConfig) {
             bool accept = false;
-            ImageInputDialog webSocketIpDialog = new("Introduce la contraseña del WebSocket", "Help_WebSocket.gif",
-                true, true, appConfig.obsInfo.obsPass);
+            ImageInputDialog webSocketIpDialog = new("Introduce la contraseña del WebSocket y recomiendo deshabilitar" +
+                                                     " \"Habilitar alertas en la bandeja de sistema\"",
+                "Help_WebSocket.gif", true, true, appConfig.obsInfo.obsPass);
             do {
                 if (webSocketIpDialog.ShowDialog() == true) {
                     appConfig.obsInfo.obsPass = webSocketIpDialog.result;
@@ -51,13 +52,13 @@ namespace TwitchRewardSlideshow {
 
         private static void CheckOBSConfigureSource(ref AppConfig appConfig) {
             bool accept = false;
-            const string text = "Introduce el tiempo que quieres que haya entre diapositivas (ms)" +
+            const string text = "Introduce el tiempo que quieres que haya entre diapositivas (en ms) " +
                                 "(no hace falta hacerlo en OBS, va por separado).\n" +
-                                "**IMPORTANTE**: Necesitas establecer la relación de aspecto a un" +
+                                "**IMPORTANTE**: Necesitas establecer la relación de aspecto a un " +
                                 "valor fijo y no dejarlo en automatico.\n" +
                                 "(Por ejemplo puedes poner el tamaño de los A4, que son \"595x842\"" +
-                                ", \"794x1123\", \"1240x1754\" o \"2480x3508\" dependiendo de la" +
-                                "resolucion que quieras que tenga)";
+                                ", \"794x1123\", \"1240x1754\" o \"2480x3508\" dependiendo de la " +
+                                "resolución que quieres que tenga)";
 
             ImageInputDialog webSocketIpDialog = new(text, "Help_ConfigSource.gif", false, true,
                 appConfig.obsInfo.slideTimeInMilliseconds.ToString());
