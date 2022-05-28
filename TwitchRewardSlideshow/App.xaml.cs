@@ -13,6 +13,7 @@ using TwitchLib.Client.Models;
 using TwitchLib.PubSub.Events;
 using TwitchRewardSlideshow.Configuration;
 using TwitchRewardSlideshow.Utilities;
+using TwitchRewardSlideshow.Windows;
 using Application = System.Windows.Application;
 using OnLogArgs = TwitchLib.Client.Events.OnLogArgs;
 
@@ -31,8 +32,6 @@ namespace TwitchRewardSlideshow {
 
         public static event Action OnNewImageDownloaded;
 
-        private static ConsoleManager consoleManager;
-
         private Timer imageTimer;
         private const int timerInterval = 1000;
 
@@ -45,11 +44,13 @@ namespace TwitchRewardSlideshow {
 
             CheckUpdate();
 
+            if (config.Get<AppConfig>().firstTime) InformationChecker.CheckAll();
+
             SetupTwitch();
             SetupOBS();
             SetupImageTimer();
 
-            TwitchRewardSlideshow.MainWindow.OnNewImageAccepted += ChangeImagesFolder;
+            TwitchRewardSlideshow.Windows.MainWindow.OnNewImageAccepted += ChangeImagesFolder;
             ChangeImagesFolder();
 
             window = new MainWindow();
@@ -81,7 +82,7 @@ namespace TwitchRewardSlideshow {
         }
 
         private void SetupConsole() {
-            consoleManager = new ConsoleManager();
+            ConsoleManager.InitConsole();
             DispatcherUnhandledException += ConsoleManager.App_DispatcherUnhandledException;
             Exit += (_, _) => ConsoleManager.backupFile();
         }
@@ -187,7 +188,8 @@ namespace TwitchRewardSlideshow {
                     ImageBuffer buffer = config.Get<ImageBuffer>();
                     if (buffer.toCheckImages.Count == 0) twitch.SendMesage("No hay más imagenes para comprobar");
                     ImageInfo info = buffer.toCheckImages.Dequeue();
-                    twitch.SendMesage($"La proxima imagen es de {info.user} con link a {info.downloadLink}");
+                    twitch.SendMesage($"La proxima imagen ({(info.exclusive ? "Exclusiva" : "No exclusiva")})" +
+                                      $" es de {info.user} con link a {info.downloadLink}");
                     break;
                 }
                 case "help": {
@@ -257,9 +259,8 @@ namespace TwitchRewardSlideshow {
             config.Set(imageBuffer);
         }
 
-        public static void ShowError(string name, bool openFolder = true) {
-            MessageBox.Show($"Hubo un error de conexión a {name}, comprueba tus datos" +
-                            $" o revisa si la conexion esta disponible.");
+        public static void ShowError(string error, bool openFolder = true) {
+            MessageBox.Show(error);
             if (openFolder) {
                 ProcessStartInfo psi = new() {
                     FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

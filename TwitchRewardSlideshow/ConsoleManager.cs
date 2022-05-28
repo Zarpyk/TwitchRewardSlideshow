@@ -11,10 +11,9 @@ namespace TwitchRewardSlideshow {
 
         private static string logPath;
 
-        public ConsoleManager() {
-#if DEBUG
+        internal static void InitConsole() {
             AttachConsole(-1);
-#endif
+
             logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 App.devName, App.productName, "Console.log");
             DualOut.Init();

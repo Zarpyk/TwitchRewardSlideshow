@@ -39,4 +39,13 @@
       <Page Remove="obj\**" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="Resources\Help_CreateSource.gif" />
+      <Resource Include="Resources\Help_CreateSource.gif" />
+      <None Remove="Resources\Help_WebSocket.gif" />
+      <Resource Include="Resources\Help_WebSocket.gif" />
+      <None Remove="Resources\Help_ConfigSource.gif" />
+      <Resource Include="Resources\Help_ConfigSource.gif" />
+    </ItemGroup>
+
 </Project>

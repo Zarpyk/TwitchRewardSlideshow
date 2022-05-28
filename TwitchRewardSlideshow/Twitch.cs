@@ -13,10 +13,20 @@ using OnLogArgs = TwitchLib.Client.Events.OnLogArgs;
 namespace TwitchRewardSlideshow {
     public class Twitch {
         //twitch token 1otztatspp90br6j2m3sj45cfxk9va
-        public TwitchPubSub pubSubClient = new();
         public TwitchClient client = new();
+        public TwitchPubSub pubSubClient = new();
+
+        private const string errorMsg = "Hubo un error de conexión a Twitch, comprueba tus datos " +
+                                        "o revisa si la conexión esta disponible.";
 
         public Twitch() {
+            SetupClient();
+            SetupPubSub();
+        }
+
+        public void RestartAll() {
+            client.Disconnect();
+            pubSubClient.Disconnect();
             SetupClient();
             SetupPubSub();
         }
@@ -32,7 +42,7 @@ namespace TwitchRewardSlideshow {
             try {
                 credentials = new ConnectionCredentials(config.channelName, config.oauth);
             } catch (Exception) {
-                App.ShowError("Twich");
+                /*App.ShowError(errorMsg);*/
                 return;
             }
             var clientOptions = new ClientOptions {
@@ -40,8 +50,14 @@ namespace TwitchRewardSlideshow {
                 ThrottlingPeriod = TimeSpan.FromSeconds(30)
             };
             WebSocketClient customClient = new(clientOptions);
+
             client = new TwitchClient(customClient);
+#if DEBUG
             client.Initialize(credentials, config.destinationChannel);
+#endif
+#if RELEASE
+            client.Initialize(credentials, config.channelName);
+#endif
             client.AddChatCommandIdentifier(config.commandPrefix);
 
             client.OnLog += OnClientLog;
@@ -52,17 +68,22 @@ namespace TwitchRewardSlideshow {
 
         private void OnClientIncorrectLogin(object sender, OnIncorrectLoginArgs e) {
             Console.WriteLine(e.Exception);
-            App.ShowError("Twich");
+            /*App.ShowError(errorMsg);*/
         }
 
         private void OnClientConnectionError(object sender, OnConnectionErrorArgs e) {
             Console.WriteLine(e.Error);
-            App.ShowError("Twich");
+            /*App.ShowError(errorMsg);*/
         }
 
         public void SendMesage(string msg, bool withPrefix = true) {
-            client.SendMessage(App.config.Get<TwitchConfig>().destinationChannel,
-                (withPrefix ? App.config.Get<AppConfig>().appPrefix : "") + msg);
+#if DEBUG
+            string channel = App.config.Get<TwitchConfig>().destinationChannel;
+#endif
+#if RELEASE
+            string channel = App.config.Get<TwitchConfig>().channelName;
+#endif
+            client.SendMessage(channel, (withPrefix ? App.config.Get<AppConfig>().appPrefix : "") + msg);
         }
 
         private void OnClientLog(object sender, OnLogArgs e) {
@@ -74,7 +95,12 @@ namespace TwitchRewardSlideshow {
         }
 
         public void PubSubConnect() {
+#if DEBUG
             pubSubClient.ListenToChannelPoints(App.config.Get<TwitchConfig>().destinationChannelId);
+#endif
+#if RELEASE
+            pubSubClient.ListenToChannelPoints(App.config.Get<TwitchConfig>().channelId);
+#endif
             pubSubClient.Connect();
         }
 
@@ -96,7 +122,7 @@ namespace TwitchRewardSlideshow {
 
         private void OnPubSubServiceConnected(object sender, EventArgs e) {
             Console.WriteLine("Connected to pubsub server");
-            pubSubClient.SendTopics(App.config.Get<TwitchConfig>().token);
+            pubSubClient.SendTopics(App.config.Get<TwitchConfig>().oauth);
         }
 
         private void OnPubSubListenResponse(object sender, OnListenResponseArgs e) {

@@ -19,24 +19,26 @@ namespace TwitchRewardSlideshow {
         private Timer obsTimer;
         private ImageBuffer intertalBuffer;
 
-        private SourceSettings sourceSettings;
         private SlideshowSettings settings;
+
+        private const string errorMsg = "No se ha podido conectar al WebSocket o " +
+                                        "no se ha encontrado la galería de imágenes. " +
+                                        "Revisa la configuración y tu OBS.";
 
         public void Init() {
             obs = new OBSWebsocket();
             AppConfig appConfig = App.config.Get<AppConfig>();
+            SourceSettings sourceSettings;
             try {
                 obs.Connect(appConfig.obsInfo.obsIP, appConfig.obsInfo.obsPass);
                 SetupTimer();
                 intertalBuffer = App.config.Get<ImageBuffer>();
-                //TODO Create source
                 sourceSettings = obs.GetSourceSettings(appConfig.obsInfo.gallerySourceName);
             } catch {
-                App.ShowError("OBS", false);
+                App.ShowError(errorMsg);
                 return;
             }
-            if (sourceSettings == null) MessageBox.Show("No se ha encontrado la fuente de la galeria");
-            else settings = JsonConvert.DeserializeObject<SlideshowSettings>(sourceSettings.Settings.ToString());
+            settings = JsonConvert.DeserializeObject<SlideshowSettings>(sourceSettings.Settings.ToString());
         }
 
         public void Disconnect(object sender, ExitEventArgs exitEventArgs) {
@@ -49,12 +51,12 @@ namespace TwitchRewardSlideshow {
             intertalBuffer.activeExclusiveImage = imageBuffer.activeExclusiveImage;
             UpdateCarouselImages(imageBuffer, x => x.defaultImages, x => x.displayedDefaultImages);
 
-            obsTimer.Stop();
+            /*obsTimer.Stop();
             NextImage(null, null);
-            obsTimer.Start();
+            obsTimer.Start();*/
         }
 
-        private void UpdateCarouselImages(ImageBuffer buffer,
+        private bool UpdateCarouselImages(ImageBuffer buffer,
             Expression<Func<ImageBuffer, List<ImageInfo>>> active,
             Expression<Func<ImageBuffer, List<ImageInfo>>> used) {
             Func<ImageBuffer, List<ImageInfo>> activeF = active.Compile();
@@ -65,11 +67,14 @@ namespace TwitchRewardSlideshow {
             List<ImageInfo> newImage = activeF(buffer).Except(allOldImage).ToList();
             List<ImageInfo> oldImage = allOldImage.Except(activeF(buffer)).ToList();
 
+            if (newImage.Count == 0 && oldImage.Count == 0) return false;
+
             List<ImageInfo> activeV = activeF(intertalBuffer).Union(newImage).Except(oldImage).ToList();
             List<ImageInfo> usedV = usedF(intertalBuffer).Except(oldImage).ToList();
 
             OtherUtilities.AssignValue(active, intertalBuffer, activeV);
             OtherUtilities.AssignValue(used, intertalBuffer, usedV);
+            return true;
         }
 
         private void SetupTimer() {
@@ -102,7 +107,6 @@ namespace TwitchRewardSlideshow {
             } else {
                 ChangeImageSource(intertalBuffer.activeExclusiveImage.path);
             }
-            //RefreshSlideTime();
         }
 
         private void NextDefaultImage() {
@@ -120,8 +124,10 @@ namespace TwitchRewardSlideshow {
         }
 
         private void ChangeImageSource(string path) {
+            if (settings == null) return;
             string sourceName = App.config.Get<AppConfig>().obsInfo.gallerySourceName;
-            settings.files = path.IsNullOrEmpty() ? null : new List<FileSettings> { new(false, true, path) };
+            settings.files = path.IsNullOrEmpty() ? new List<FileSettings>()
+                : new List<FileSettings> { new(false, true, path) };
             obs.SetSourceSettings(sourceName, JObject.Parse(JsonConvert.SerializeObject(settings)));
         }
     }

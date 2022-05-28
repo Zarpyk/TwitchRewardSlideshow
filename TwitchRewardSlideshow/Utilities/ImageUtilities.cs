@@ -6,6 +6,8 @@ using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using TwitchRewardSlideshow.Configuration;
 
 namespace TwitchRewardSlideshow.Utilities {
@@ -16,6 +18,15 @@ namespace TwitchRewardSlideshow.Utilities {
         private static readonly byte[] jpeg = { 255, 216, 255, 224 };
         private static readonly byte[] jpeg2 = { 255, 216, 255, 225 };
 
+        public static ImageSource BitmapFromUri(Uri source) {
+            BitmapImage bitmap = new();
+            bitmap.BeginInit();
+            bitmap.UriSource = source;
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+            return bitmap;
+        }
+        
         internal static string GetUrl(string redemptionUserInput) {
             Match match = Regex.Match(redemptionUserInput,
                 @"((https|http)(://))?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)");
@@ -95,7 +106,7 @@ namespace TwitchRewardSlideshow.Utilities {
         private static async Task<ImageInfo> TryDownloadImage(ImageInfo imageInfo, string fileExtension, Uri uri) {
             using var httpClient = new HttpClient();
             AppConfig config = App.config.Get<AppConfig>();
-            string directoryPath = Path.Combine(config.imageFolder, config.tempImageFolder);
+            //string directoryPath = Path.Combine(config.imageFolder, config.tempImageFolder);
             string id = Guid.NewGuid().ToString("N");
             string path = Path.Combine(config.imageFolder, $"{id}{fileExtension}");
             Directory.CreateDirectory(config.imageFolder);

@@ -3,19 +3,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Timers;
-using System.Web;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using Microsoft.Web.WebView2.Core;
+using Newtonsoft.Json;
 using TwitchLib.Client.Events;
 using TwitchLib.Communication.Events;
 using TwitchLib.PubSub.Events;
 using TwitchRewardSlideshow.Configuration;
+using TwitchRewardSlideshow.Json;
 using TwitchRewardSlideshow.Utilities;
+using TwitchRewardSlideshow.Utilities.TwitchUtilities;
 using XamlAnimatedGif;
 
-namespace TwitchRewardSlideshow {
+namespace TwitchRewardSlideshow.Windows {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -31,7 +32,6 @@ namespace TwitchRewardSlideshow {
             InitializeComponent();
             AppConfig config = App.config.Get<AppConfig>();
             BufferPathText.Text = config.imageFolder;
-            DefaultImageText.Text = config.defaultPosterFolder;
 
             CheckDirectories(config);
 
@@ -124,6 +124,7 @@ namespace TwitchRewardSlideshow {
             } else {
                 HaveMoreImageText.Visibility = Visibility.Visible;
                 User.Content = "Del usuario: ...";
+                Exclusive.Content = "Exclusivo: ...";
             }
         }
 
@@ -135,7 +136,7 @@ namespace TwitchRewardSlideshow {
                 if (Path.GetExtension(imageInfo.path) == ".gif") {
                     AnimationBehavior.SetSourceUri(PreviewImage, new Uri(imageInfo.path));
                 } else {
-                    PreviewImage.Source = BitmapFromUri(new Uri(imageInfo.path!));
+                    PreviewImage.Source = ImageUtilities.BitmapFromUri(new Uri(imageInfo.path!));
                 }
             } catch (Exception) {
                 PreviewImage.Source = null;
@@ -143,22 +144,14 @@ namespace TwitchRewardSlideshow {
                 CheckNextImage();
             }
             User.Content = $"Del usuario: {imageInfo.user}";
-        }
-
-        public static ImageSource BitmapFromUri(Uri source) {
-            BitmapImage bitmap = new();
-            bitmap.BeginInit();
-            bitmap.UriSource = source;
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.EndInit();
-            return bitmap;
+            Exclusive.Content = $"Exclusivo: {(imageInfo.exclusive ? "Sí" : "No")}";
         }
 
         private string SendImageToFolder() {
             ImageBuffer buffer = App.config.Get<ImageBuffer>();
             if (buffer.toCheckImages.Count == 0) return null;
             ImageInfo imageInfo = buffer.toCheckImages.Dequeue();
-            AppConfig config = App.config.Get<AppConfig>();
+            //AppConfig config = App.config.Get<AppConfig>();
             //imageInfo.MovePath(Path.Combine(config.imageFolder, config.acceptedImageFolder));
             if (imageInfo.exclusive) buffer.exclusiveImagesQueue.Enqueue(imageInfo);
             else buffer.activeImages.Add(imageInfo);
@@ -184,24 +177,26 @@ namespace TwitchRewardSlideshow {
                 inputPath = Directory.Exists(imageFolder) ? imageFolder : @"C:\"
             };
             if (dlg.ShowDialog() == true) {
-                App.config.Set<AppConfig>(x => x.imageFolder, dlg.resultPath);
+                appConfig = App.config.Get<AppConfig>();
+                appConfig.imageFolder = dlg.resultPath;
+                appConfig.defaultPosterFolder = Path.Combine(dlg.resultPath, "Default");
+                Directory.CreateDirectory(appConfig.defaultPosterFolder);
+                App.config.Set(appConfig);
                 BufferPathText.Text = App.config.Get<AppConfig>().imageFolder;
+                RefreshDefaultImages();
             }
         }
 
-        private void ClickDefineDefaultImagesFolder(object sender, RoutedEventArgs e) {
+        private void ClickAddDefaultImage(object sender, RoutedEventArgs e) {
             AppConfig appConfig = App.config.Get<AppConfig>();
             string defaultImageFolder = appConfig.defaultPosterFolder;
-            FolderPicker dlg = new() {
-                inputPath = Directory.Exists(defaultImageFolder) ? defaultImageFolder : @"C:\"
-            };
-            if (dlg.ShowDialog() == true) {
-                appConfig = App.config.Get<AppConfig>();
-                appConfig.defaultPosterFolder = dlg.resultPath;
-                App.config.Set(appConfig);
-                RefreshDefaultImages();
-                DefaultImageText.Text = dlg.resultPath;
-            }
+            
+        }
+
+        private void ClickRemoveDefaultImage(object sender, RoutedEventArgs e) {
+            AppConfig appConfig = App.config.Get<AppConfig>();
+            string defaultImageFolder = appConfig.defaultPosterFolder;
+
         }
 
         private void RefreshDefaultImages() {
@@ -225,12 +220,8 @@ namespace TwitchRewardSlideshow {
 
         private void CheckDirectories(AppConfig config) {
             if (!Directory.Exists(config.imageFolder)) {
-                MessageBox.Show("La carpeta de imagenes principal no existe");
+                MessageBox.Show("La carpeta de imagenes no existe");
                 ClickDefineMainFolder(null, null);
-            }
-            if (!Directory.Exists(config.defaultPosterFolder)) {
-                MessageBox.Show("La carpeta de imagenes por defecto no existe");
-                ClickDefineDefaultImagesFolder(null, null);
             }
         }
         #endregion
@@ -248,10 +239,22 @@ namespace TwitchRewardSlideshow {
             App.twitch.PubSubConnect();
         }
 
-        private void OnPubSubClosed(object sender, EventArgs e) {
+        private void ClickReloadChat(object sender, RoutedEventArgs e) {
+            App.twitch.client.Connect();
+        }
+
+        #region Connect/Disconnect
+        private void OnClientConnected(object sender, OnConnectedArgs e) {
             Dispatcher.BeginInvoke(new Action(() => {
-                RewardStatusText.Text = "Reward no disponible";
-                RewardStatusText.Foreground = new SolidColorBrush(Colors.Red);
+                ChatStatusText.Text = "Chat disponible";
+                ChatStatusText.Foreground = new SolidColorBrush(Colors.White);
+            }));
+        }
+
+        private void OnClientDisconnected(object sender, OnDisconnectedEventArgs e) {
+            Dispatcher.BeginInvoke(new Action(() => {
+                ChatStatusText.Text = "Chat no disponible";
+                ChatStatusText.Foreground = new SolidColorBrush(Colors.Red);
             }));
         }
 
@@ -268,53 +271,35 @@ namespace TwitchRewardSlideshow {
                 GoToTwitchPanel();
 #endif
 #if RELEASE
-                if (e.Response.Error == "ERR_BADAUTH" && !alreadyTryGetToken) {
-                    GetToken();
-                } else {
-                    GoToTwitchPanel();
-                }
+                if (e.Response.Error == "ERR_BADAUTH" && !alreadyTryGetToken) GetAuthToken();
+                else GoToTwitchPanel();
 #endif
             }
         }
 
-        private void ClickReloadChat(object sender, RoutedEventArgs e) {
-            App.twitch.client.Connect();
-        }
-
-        private void OnClientConnected(object sender, OnConnectedArgs e) {
+        private void OnPubSubClosed(object sender, EventArgs e) {
             Dispatcher.BeginInvoke(new Action(() => {
-                ChatStatusText.Text = "Chat disponible";
-                ChatStatusText.Foreground = new SolidColorBrush(Colors.White);
+                RewardStatusText.Text = "Reward no disponible";
+                RewardStatusText.Foreground = new SolidColorBrush(Colors.Red);
             }));
         }
+        #endregion
 
-        private void OnClientDisconnected(object sender, OnDisconnectedEventArgs e) {
+        private void GetAuthToken() {
             Dispatcher.BeginInvoke(new Action(() => {
-                ChatStatusText.Text = "Chat no disponible";
-                ChatStatusText.Foreground = new SolidColorBrush(Colors.Red);
-            }));
-        }
-
-        private void GetToken() {
-            Dispatcher.BeginInvoke(new Action(() => {
-                string link = "https://id.twitch.tv/oauth2/authorize?response_type=token&";
-                link += "client_id=eg9uc3o0ngoo7ohl3n1a3fjtpoi1j8&";
-                link += "redirect_uri=http://localhost:3000&";
-                link += "scope=channel%3Aread%3Aredemptions";
+                string link = TwitchInfo.GetTokenLink();
                 WebView.Source = new Uri(link);
                 WebView.SourceChanged += WebViewOnSourceChanged;
-                //https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=eg9uc3o0ngoo7ohl3n1a3fjtpoi1j8&redirect_uri=http://localhost:3000&scope=channel:read:redemptions
             }));
         }
 
         private void WebViewOnSourceChanged(object sender, CoreWebView2SourceChangedEventArgs e) {
             if (WebView.Source.Host.Equals("localhost")) {
-                //http://localhost:3000/#access_token=rsdg9u3pbgn4yo3tlwa4eruwfs4ifp&scope=&token_type=bearer
-                string token = WebView.Source.AbsoluteUri.Split('/').Last().Split('&').First()
-                    .Replace("#access_token=", "");
-                App.config.Set<TwitchConfig>(x => x.token, token);
-                App.twitch.pubSubClient.Disconnect();
-                App.twitch.PubSubConnect();
+                string oauth = TwitchInfo.GetOAuth(WebView.Source.AbsoluteUri);
+                TwitchUsersData usersData = JsonConvert.DeserializeObject<TwitchUsersData>(
+                    TwitchInfo.GetUserInfo(oauth));
+                if (!TwitchInfo.SaveData(oauth, usersData)) return;
+                App.twitch.RestartAll();
                 alreadyTryGetToken = true;
             }
         }
@@ -327,11 +312,11 @@ namespace TwitchRewardSlideshow {
                     if (WebView.Source.Equals(new Uri("https://www.twitch.tv/?no-reload=true"))) {
 #if DEBUG
                         WebView.Source =
-                            new Uri($"https://www.twitch.tv/popout/{twitchConfig.destinationChannel}/chat");
+                            new Uri($"https://www.twitch.tv/popout/{twitchConfig.channelName}/chat");
 #endif
 #if RELEASE
-                    WebView.Source =
-                        new Uri($"https://www.twitch.tv/popout/{twitchConfig.destinationChannel}/reward-queue");
+                        WebView.Source =
+                            new Uri($"https://www.twitch.tv/popout/{twitchConfig.channelName}/reward-queue");
 #endif
                     }
                 };
