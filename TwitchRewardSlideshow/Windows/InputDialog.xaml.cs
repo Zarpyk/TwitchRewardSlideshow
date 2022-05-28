@@ -10,11 +10,11 @@ namespace TwitchRewardSlideshow.Windows {
             RequieredText.Content = text;
             AnswerTextBox.Text = defaultAnswer;
             if (isSecret) {
-                AnswerTextBox.Visibility = Visibility.Visible;
-                PassTextBox.Visibility = Visibility.Hidden;
-            } else {
-                PassTextBox.Visibility = Visibility.Visible;
                 AnswerTextBox.Visibility = Visibility.Hidden;
+                PassTextBox.Visibility = Visibility.Visible;
+            } else {
+                PassTextBox.Visibility = Visibility.Hidden;
+                AnswerTextBox.Visibility = Visibility.Visible;
             }
             if (hideCancel) CancelButton.Visibility = Visibility.Collapsed;
         }
