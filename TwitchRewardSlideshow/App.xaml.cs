@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using AppConfiguration;
@@ -12,7 +11,7 @@ using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.PubSub.Events;
 using TwitchRewardSlideshow.Configuration;
-using TwitchRewardSlideshow.Utilities;
+using TwitchRewardSlideshow.Utilities.ImageUtilities;
 using TwitchRewardSlideshow.Windows;
 using Application = System.Windows.Application;
 using OnLogArgs = TwitchLib.Client.Events.OnLogArgs;
@@ -44,7 +43,10 @@ namespace TwitchRewardSlideshow {
 
             CheckUpdate();
 
-            if (config.Get<AppConfig>().firstTime) InformationChecker.CheckAll();
+            /*if (config.Get<AppConfig>().firstTime) {
+                InformationChecker.CheckAll();
+                config.Set<AppConfig>(x => x.firstTime, false);
+            }*/
 
             SetupTwitch();
             SetupOBS();
@@ -67,7 +69,7 @@ namespace TwitchRewardSlideshow {
             Release latest = releases[0];
             if (latest.TagName != version) {
                 MessageBoxResult result = MessageBox.Show("Hay una nueva version disponible ¿Quieres descargarlo?",
-                    productName, MessageBoxButton.YesNo);
+                                                          productName, MessageBoxButton.YesNo);
                 switch (result) {
                     case MessageBoxResult.Yes:
                         Process.Start(new ProcessStartInfo {
@@ -166,11 +168,11 @@ namespace TwitchRewardSlideshow {
             switch (e.Command.CommandText) {
                 case "add": {
                     string[] arg = e.Command.ArgumentsAsString.Split(':', 2);
-                    foreach (RewardConfig reward in App.config.Get<TwitchConfig>().rewards.Where(x =>
+                    foreach (RewardConfig reward in config.Get<TwitchConfig>().rewards.Where(x =>
                                  string.Equals(x.title,
-                                     arg[0], StringComparison.InvariantCultureIgnoreCase))) {
+                                               arg[0], StringComparison.InvariantCultureIgnoreCase))) {
                         ImageInfo imageInfo = InitImageInfo(reward, arg[1], chatMessage.DisplayName);
-                        StartDownloadImage(imageInfo);
+                        DownloadImage(imageInfo);
                     }
                     break;
                 }
@@ -202,12 +204,9 @@ namespace TwitchRewardSlideshow {
                     twitch.SendMesage(
                         "!add Test Poster:https://media.discordapp.net/attachments/960637692348072027/977671768045137960/unknown.png",
                         false);
-                    twitch.SendMesage(
-                        "!add Test Poster:https://gyazo.com/0915089a6ccd7093eb2191091f7da67e", false);
-                    twitch.SendMesage(
-                        "!add Test Poster:https://imgur.com/mS8VUB6", false);
-                    twitch.SendMesage(
-                        "!add Test Poster:https://imgur.com/gallery/RdmEsxR", false);
+                    twitch.SendMesage("!add Test Poster:https://gyazo.com/0915089a6ccd7093eb2191091f7da67e", false);
+                    twitch.SendMesage("!add Test Poster:https://imgur.com/mS8VUB6", false);
+                    twitch.SendMesage("!add Test Poster:https://imgur.com/gallery/RdmEsxR", false);
                     break;
                 }
             }
@@ -215,10 +214,10 @@ namespace TwitchRewardSlideshow {
 
         private void SortReward(object sender, OnChannelPointsRewardRedeemedArgs e) {
             foreach (ImageInfo imageInfo in from reward in config.Get<TwitchConfig>().rewards
-                     where reward.title == e.RewardRedeemed.Redemption.Reward.Title
-                     select InitImageInfo(reward, e.RewardRedeemed.Redemption.UserInput,
-                         e.RewardRedeemed.Redemption.User.DisplayName)) {
-                StartDownloadImage(imageInfo);
+                                            where reward.title == e.RewardRedeemed.Redemption.Reward.Title
+                                            select InitImageInfo(reward, e.RewardRedeemed.Redemption.UserInput,
+                                                                 e.RewardRedeemed.Redemption.User.DisplayName)) {
+                DownloadImage(imageInfo);
             }
         }
 
@@ -231,32 +230,16 @@ namespace TwitchRewardSlideshow {
             2016 https://dev.twitch.tv/docs/irc/example-parser */
         }
 
-        private void StartDownloadImage(ImageInfo imageInfo) {
-            ImageInfo info = imageInfo;
-            imageInfo = Task.Run(async () => await ImageUtilities.DownloadImage(info)).Result;
-
-            Message message = config.Get<AppConfig>().messages;
-            if (imageInfo.path != null) {
-                SaveBuffer(imageInfo);
+        private void DownloadImage(ImageInfo imageInfo) {
+            if (ImageDownloader.StartDownloadImage(imageInfo)) {
                 Dispatcher.BeginInvoke(new Action(() => { OnNewImageDownloaded?.Invoke(); }));
-                twitch.SendMesage(message.downloadSuccess);
-            } else {
-                twitch.SendMesage(message.downloadFail);
             }
         }
 
         private static ImageInfo InitImageInfo(RewardConfig reward, string url, string user) {
-            ImageInfo imageInfo = new(reward.exclusiveImage, reward.timeInMilliseconds, ImageUtilities.GetUrl(url));
+            ImageInfo imageInfo = new(reward.exclusiveImage, reward.timeInMilliseconds, ImageDownloader.GetUrl(url));
             imageInfo.user = user;
             return imageInfo;
-        }
-
-        private static void SaveBuffer(ImageInfo imageInfo) {
-            ImageBuffer imageBuffer = config.Get<ImageBuffer>();
-            Queue<ImageInfo> images = imageBuffer.toCheckImages;
-            images.Enqueue(imageInfo);
-            imageBuffer.toCheckImages = images;
-            config.Set(imageBuffer);
         }
 
         public static void ShowError(string error, bool openFolder = true) {
@@ -264,8 +247,8 @@ namespace TwitchRewardSlideshow {
             if (openFolder) {
                 ProcessStartInfo psi = new() {
                     FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                        devName,
-                        productName),
+                                            devName,
+                                            productName),
                     UseShellExecute = true
                 };
                 Process.Start(psi);

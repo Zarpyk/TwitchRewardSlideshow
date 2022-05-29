@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using TwitchRewardSlideshow.Utilities;
+using TwitchRewardSlideshow.Utilities.ImageUtilities;
 using XamlAnimatedGif;
 
 namespace TwitchRewardSlideshow.Windows {
@@ -17,7 +18,7 @@ namespace TwitchRewardSlideshow.Windows {
 
             if (imageName.EndsWith(".gif")) {
                 AnimationBehavior.SetSourceUri(HelpImage, imageUri);
-            } else HelpImage.Source = ImageUtilities.BitmapFromUri(imageUri);
+            } else HelpImage.Source = ImageDownloader.BitmapFromUri(imageUri);
 
             if (isSecret) {
                 AnswerTextBox.Visibility = Visibility.Hidden;

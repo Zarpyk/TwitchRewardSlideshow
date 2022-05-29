@@ -27,8 +27,8 @@ namespace TwitchRewardSlideshow.Utilities.TwitchUtilities {
             HttpClient client = new();
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {oauth}");
             client.DefaultRequestHeaders.Add("Client-Id", App.config.Get<TwitchConfig>().clientId);
-            return Task.Run(async () => await client.GetStringAsync(
-                new Uri("https://api.twitch.tv/helix/users"))).Result;
+            return Task.Run(async () => await client.GetStringAsync(new Uri("https://api.twitch.tv/helix/users")))
+                       .Result;
         }
 
         public static bool SaveData(string oauth, TwitchUsersData usersData) {
@@ -38,8 +38,8 @@ namespace TwitchRewardSlideshow.Utilities.TwitchUtilities {
             config.channelName = usersData.data.First().login;
             config.channelId = usersData.data.First().id;
 #if DEBUG
-                config.destinationChannel = data.login;
-                config.destinationChannelId = data.id;
+            config.destinationChannel = usersData.data.First().login;
+            config.destinationChannelId = usersData.data.First().id;
 #endif
             App.config.Set(config);
             return true;

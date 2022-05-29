@@ -14,6 +14,7 @@
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
       <PackageReference Include="obs-websocket-dotnet" Version="4.9.1" />
       <PackageReference Include="Octokit" Version="0.51.0" />
+      <PackageReference Include="Splat.Drawing" Version="14.2.8" />
       <PackageReference Include="TwitchLib.Client" Version="3.2.4" />
       <PackageReference Include="TwitchLib.PubSub" Version="3.2.3" />
       <PackageReference Include="XamlAnimatedGif" Version="2.0.2" />

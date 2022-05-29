@@ -102,7 +102,7 @@
                     <Button.Resources>
                         <ResourceDictionary>
                             <ResourceDictionary.MergedDictionaries>
-                                <ResourceDictionary Source="Dictionaries/AcceptButtonStyle.xaml" />
+                                <ResourceDictionary Source="../Dictionaries/AcceptButtonStyle.xaml" />
                             </ResourceDictionary.MergedDictionaries>
                         </ResourceDictionary>
                     </Button.Resources>
@@ -117,7 +117,7 @@
                     <Button.Resources>
                         <ResourceDictionary>
                             <ResourceDictionary.MergedDictionaries>
-                                <ResourceDictionary Source="Dictionaries/DenyButtonStyle.xaml" />
+                                <ResourceDictionary Source="../Dictionaries/DenyButtonStyle.xaml" />
                             </ResourceDictionary.MergedDictionaries>
                         </ResourceDictionary>
                     </Button.Resources>

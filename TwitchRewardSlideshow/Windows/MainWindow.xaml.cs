@@ -13,6 +13,7 @@ using TwitchLib.PubSub.Events;
 using TwitchRewardSlideshow.Configuration;
 using TwitchRewardSlideshow.Json;
 using TwitchRewardSlideshow.Utilities;
+using TwitchRewardSlideshow.Utilities.ImageUtilities;
 using TwitchRewardSlideshow.Utilities.TwitchUtilities;
 using XamlAnimatedGif;
 
@@ -136,7 +137,7 @@ namespace TwitchRewardSlideshow.Windows {
                 if (Path.GetExtension(imageInfo.path) == ".gif") {
                     AnimationBehavior.SetSourceUri(PreviewImage, new Uri(imageInfo.path));
                 } else {
-                    PreviewImage.Source = ImageUtilities.BitmapFromUri(new Uri(imageInfo.path!));
+                    PreviewImage.Source = ImageDownloader.BitmapFromUri(new Uri(imageInfo.path!));
                 }
             } catch (Exception) {
                 PreviewImage.Source = null;
