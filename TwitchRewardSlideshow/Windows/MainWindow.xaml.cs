@@ -6,6 +6,7 @@ using System.Timers;
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.Web.WebView2.Core;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using TwitchLib.Client.Events;
 using TwitchLib.Communication.Events;
@@ -16,6 +17,7 @@ using TwitchRewardSlideshow.Utilities;
 using TwitchRewardSlideshow.Utilities.ImageUtilities;
 using TwitchRewardSlideshow.Utilities.TwitchUtilities;
 using XamlAnimatedGif;
+using FileDialog = System.Windows.Forms.FileDialog;
 
 namespace TwitchRewardSlideshow.Windows {
     /// <summary>
@@ -189,15 +191,55 @@ namespace TwitchRewardSlideshow.Windows {
         }
 
         private void ClickAddDefaultImage(object sender, RoutedEventArgs e) {
-            AppConfig appConfig = App.config.Get<AppConfig>();
-            string defaultImageFolder = appConfig.defaultPosterFolder;
-            
+            AddRemoveDefaultImage(true);
         }
 
         private void ClickRemoveDefaultImage(object sender, RoutedEventArgs e) {
-            AppConfig appConfig = App.config.Get<AppConfig>();
-            string defaultImageFolder = appConfig.defaultPosterFolder;
+            AddRemoveDefaultImage(false);
+        }
 
+        private void AddRemoveDefaultImage(bool add) {
+            AppConfig appConfig = App.config.Get<AppConfig>();
+            string folder;
+            if (add) {
+                folder = appConfig.defaultPosterFolder;
+                if (!Directory.Exists(folder)) {
+                    Directory.CreateDirectory(appConfig.defaultPosterFolder);
+                }
+            } else {
+                folder = Directory.Exists(appConfig.lastAddedImageFolder) ? appConfig.lastAddedImageFolder
+                             : appConfig.defaultPosterFolder;
+            }
+
+            OpenFileDialog dlg = new() {
+                InitialDirectory = folder,
+                Filter = "Imagenes (*.PNG;*.JPG;*.GIF)|*.PNG;*.JPG;*.GIF",
+                Multiselect = true,
+                Title = add ? "Añadir imagen por defecto" : "Quitar imagen por defecto"
+            };
+
+            if (dlg.ShowDialog() == true) {
+                appConfig = App.config.Get<AppConfig>();
+                if (add) appConfig.lastAddedImageFolder = Path.GetDirectoryName(dlg.FileNames.First());
+                App.config.Set(appConfig);
+                foreach (string file in dlg.FileNames) {
+                    if (add) {
+                        try {
+                            File.Copy(file, Path.Combine(appConfig.defaultPosterFolder,
+                                                         Guid.NewGuid().ToString("N") + Path.GetExtension(file)));
+                        } catch {
+                            MessageBox.Show("No se ha podido copiar la imagen");
+                        }
+                    } else {
+                        try {
+                            File.Delete(file);
+                        } catch {
+                            MessageBox.Show("No se ha podido borrar la imagen");
+                        }
+                    }
+                }
+                RefreshDefaultImages();
+            }
         }
 
         private void RefreshDefaultImages() {
@@ -297,8 +339,8 @@ namespace TwitchRewardSlideshow.Windows {
         private void WebViewOnSourceChanged(object sender, CoreWebView2SourceChangedEventArgs e) {
             if (WebView.Source.Host.Equals("localhost")) {
                 string oauth = TwitchInfo.GetOAuth(WebView.Source.AbsoluteUri);
-                TwitchUsersData usersData = JsonConvert.DeserializeObject<TwitchUsersData>(
-                    TwitchInfo.GetUserInfo(oauth));
+                TwitchUsersData usersData =
+                    JsonConvert.DeserializeObject<TwitchUsersData>(TwitchInfo.GetUserInfo(oauth));
                 if (!TwitchInfo.SaveData(oauth, usersData)) return;
                 App.twitch.RestartAll();
                 alreadyTryGetToken = true;
@@ -322,6 +364,10 @@ namespace TwitchRewardSlideshow.Windows {
                     }
                 };
             }));
+        }
+
+        private void ClickManageRewards(object sender, RoutedEventArgs e) {
+            throw new NotImplementedException();
         }
         #endregion
     }

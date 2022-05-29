@@ -31,10 +31,11 @@
                 <RowDefinition Height="100*" />
                 <RowDefinition Height="100*" />
                 <RowDefinition Height="100*" />
+                <RowDefinition Height="100*" />
                 <RowDefinition Height="20*" />
             </Grid.RowDefinitions>
             <Grid Grid.Row="1"
-                  Grid.RowSpan="5"
+                  Grid.RowSpan="6"
                   Grid.Column="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="50*" />
@@ -55,8 +56,6 @@
                     Content="No hay más imagenes que aprobar" />
                 <Image
                     Name="PreviewImage"
-                    Height="350.8"
-                    Width="248"
                     Grid.Row="0"
                     Grid.RowSpan="5" />
                 <Label
@@ -134,7 +133,9 @@
                     <RowDefinition Height="50*" />
                     <RowDefinition Height="10*" />
                     <RowDefinition Height="50*" />
-                    <RowDefinition Height="60*" />
+                    <RowDefinition Height="10*" />
+                    <RowDefinition Height="50*" />
+                    <RowDefinition Height="10*" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="50*" />
@@ -175,13 +176,20 @@
                         Grid.ColumnSpan="2"
                         Click="ClickRemoveDefaultImage">
                 </Button>
+                <Button Content="Ajustar recompensas"
+                        Style="{DynamicResource otherButton}"
+                        Grid.Row="8"
+                        Grid.Column="1"
+                        Grid.ColumnSpan="2"
+                        Click="ClickManageRewards">
+                </Button>
             </Grid>
-            <Grid Grid.Row="5"
+            <Grid Grid.Row="6"
                   Grid.Column="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="10*" />
                     <RowDefinition Height="35*" />
-                    <RowDefinition Height="50*" />
+                    <RowDefinition Height="20*" />
                     <RowDefinition Height="10*" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>

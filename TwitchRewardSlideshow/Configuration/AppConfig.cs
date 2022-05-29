@@ -2,6 +2,7 @@
     public class AppConfig : AppConfiguration.Configuration {
         public string imageFolder { get; set; } = string.Empty;
         public string defaultPosterFolder { get; set; } = string.Empty;
+        public string lastAddedImageFolder { get; set; } = string.Empty;
         //public string tempImageFolder { get; set; } = "Temp";
         //public string acceptedImageFolder { get; set; } = "Accepted";
         public string appPrefix { get; set; } = "[Bot] ";
