@@ -5,9 +5,9 @@ using System.Text;
 using System.Windows.Threading;
 
 namespace TwitchRewardSlideshow {
-    public class ConsoleManager {
+    internal class ConsoleManager {
         [DllImport("Kernel32.dll")]
-        public static extern bool AttachConsole(int processId);
+        private static extern bool AttachConsole(int processId);
 
         private static string logPath;
 
@@ -19,7 +19,7 @@ namespace TwitchRewardSlideshow {
             DualOut.Init();
         }
 
-        internal static class DualOut {
+        private static class DualOut {
             private static TextWriter _current;
 
             private class OutputWriter : TextWriter {
