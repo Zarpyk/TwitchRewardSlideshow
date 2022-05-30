@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Timers;
 using System.Windows;
 using AppConfiguration;
+using Microsoft.Win32;
 using Octokit;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
@@ -16,6 +18,7 @@ using TwitchRewardSlideshow.Utilities.ImageUtilities;
 using TwitchRewardSlideshow.Windows;
 using Application = System.Windows.Application;
 using OnLogArgs = TwitchLib.Client.Events.OnLogArgs;
+using Timer = System.Timers.Timer;
 
 namespace TwitchRewardSlideshow {
     /// <summary>
@@ -28,7 +31,7 @@ namespace TwitchRewardSlideshow {
 
         public const string devName = "GuerreroBit";
         public const string productName = "TwitchRewardSlideshow";
-        public const string version = "2.2";
+        public const string version = "2.3";
 
         public static event Action OnNewImageDownloaded;
 
@@ -46,7 +49,9 @@ namespace TwitchRewardSlideshow {
 
             if (config.Get<AppConfig>().firstTime) {
                 InformationChecker.CheckAll();
-                config.Set<AppConfig>(x => x.firstTime, false);
+                AppConfig appConfig = config.Get<AppConfig>();
+                appConfig.firstTime = false;
+                config.Set(appConfig);
             }
 
             SetupTwitch();
@@ -99,12 +104,25 @@ namespace TwitchRewardSlideshow {
 
         private void SetupTwitch() {
             twitch = new Twitch();
+            twitch.pubSubClient.OnChannelPointsRewardRedeemed -= SortReward;
+            twitch.client.OnChatCommandReceived -= SortReward;
             twitch.pubSubClient.OnChannelPointsRewardRedeemed += SortReward;
             twitch.client.OnChatCommandReceived += SortReward;
             //twitch.client.OnLog += SortReward;
         }
 
         private void SetupOBS() {
+            Process[] processes = Process.GetProcesses();
+            if (Process.GetProcessesByName("obs64").Length == 0) {
+                string obsPath = (string)Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\OBS Studio", "", null);
+                if (obsPath != null) {
+                    ProcessStartInfo startInfo = new();
+                    startInfo.WorkingDirectory = Path.Combine(obsPath, @"bin\64bit");
+                    startInfo.FileName = Path.Combine(obsPath, @"bin\64bit", "obs64.exe");
+                    Process.Start(startInfo);
+                    Thread.Sleep(5000);
+                }
+            }
             obs = new OBS();
             obs.Init();
             Exit += obs.Disconnect;
@@ -203,9 +221,8 @@ namespace TwitchRewardSlideshow {
                 }
                 case "test": {
                     if (chatMessage.UserId != "126707119") return;
-                    twitch.SendMesage(
-                        "!add Test Poster:https://media.discordapp.net/attachments/960637692348072027/977671768045137960/unknown.png",
-                        false);
+                    twitch.SendMesage("!add Test Poster:https://media.discordapp.net/attachments/960637692348072027/977671768045137960/unknown.png",
+                                      false);
                     twitch.SendMesage("!add Test Poster:https://gyazo.com/0915089a6ccd7093eb2191091f7da67e", false);
                     twitch.SendMesage("!add Test Poster:https://imgur.com/mS8VUB6", false);
                     twitch.SendMesage("!add Test Poster:https://imgur.com/gallery/RdmEsxR", false);
