@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using TwitchLib.Api.Core.Enums;
 using TwitchRewardSlideshow.Configuration;
 using TwitchRewardSlideshow.Json;
 using WebSocketSharp;
@@ -19,6 +20,7 @@ namespace TwitchRewardSlideshow.Utilities.TwitchUtilities {
             link += "scope=" + ("chat:read+" +
                                 "chat:edit+" +
                                 "channel:read:redemptions+" +
+                                "channel:manage:redemptions+" +
                                 "user:read:email").Replace(":", "%3A");
             return link;
         }

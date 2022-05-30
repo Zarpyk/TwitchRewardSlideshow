@@ -1,0 +1,175 @@
+﻿<Window x:Class="TwitchRewardSlideshow.Windows.ManageRewardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="clr-namespace:TwitchRewardSlideshow.Windows"
+        mc:Ignorable="d"
+        Title="ManageRewardDialog"
+        WindowStartupLocation="CenterScreen"
+        MinWidth="650"
+        MinHeight="350"
+        MaxWidth="650"
+        MaxHeight="350"
+        Background="#2D2A2E"
+        ResizeMode="NoResize">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Dictionaries/OtherButtonStyle.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid Margin="15"
+          MinWidth="250">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="10" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="10" />
+            <ColumnDefinition Width="0.5*" />
+            <ColumnDefinition Width="10" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="100*" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="25*" />
+        </Grid.RowDefinitions>
+        <Viewbox
+            Grid.Row="0"
+            Grid.Column="0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center">
+            <TextBlock
+                Padding="0,5,0,5"
+                Foreground="White">
+                Titulo:
+            </TextBlock>
+        </Viewbox>
+        <TextBox
+            x:Name="TitleTextBox"
+            Background="#FF707070"
+            Foreground="White"
+            Grid.Row="1"
+            Grid.Column="0"
+            Grid.ColumnSpan="7"
+            MaxLength="30"
+            Tag="Puntos"
+            TextWrapping="Wrap"
+            VerticalContentAlignment="Center"
+            TextChanged="ChangeTitleText" />
+        <Viewbox
+            Grid.Row="2"
+            Grid.Column="0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center">
+            <TextBlock
+                Padding="0,5,0,5"
+                Foreground="White">
+                Puntos necesarios:
+            </TextBlock>
+        </Viewbox>
+        <Viewbox
+            Grid.Row="2"
+            Grid.Column="2"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center">
+            <TextBlock
+                Padding="0,5,0,5"
+                Foreground="White">
+                Tiempo (segundos):
+            </TextBlock>
+        </Viewbox>
+        <TextBox
+            Name="PointTextBox"
+            Background="#FF707070"
+            Foreground="White"
+            Grid.Row="3"
+            Grid.Column="0"
+            Tag="Puntos"
+            TextWrapping="Wrap"
+            VerticalContentAlignment="Center" 
+            PreviewTextInput="NumberValidationTextBox" />
+        <TextBox
+            Name="TimeTextBox"
+            Background="#FF707070"
+            Foreground="White"
+            Grid.Row="3"
+            Grid.Column="2"
+            Tag="Tiempo"
+            TextWrapping="Wrap"
+            VerticalContentAlignment="Center"
+            PreviewTextInput="NumberValidationTextBox" />
+        <CheckBox
+            Name="ExclusiveCheckBox"
+            Grid.Row="3"
+            Grid.Column="4"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center">
+            <TextBlock
+                Foreground="White">
+                Exclusivo
+            </TextBlock>
+        </CheckBox>
+        <Button
+            Name="AddButton"
+            Grid.Row="3"
+            Grid.Column="6"
+            Style="{DynamicResource otherButton}"
+            HorizontalAlignment="Right"
+            Click="ClickAdd"
+            MinWidth="60">
+            Añadir
+        </Button>
+        <DataGrid Name="RewardsDataGrid"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  Background="#707070"
+                  BorderThickness="0"
+                  CanUserResizeRows="False"
+                  EnableColumnVirtualization="True"
+                  EnableRowVirtualization="True"
+                  SelectionMode="Single"
+                  Grid.ColumnSpan="7"
+                  Grid.Column="0"
+                  Grid.Row="5">
+            <DataGrid.Resources>
+                <Style TargetType="DataGridRow">
+                    <EventSetter Event="Selected" Handler="OnDataGridSelected" />
+                    <Setter Property="Background" Value="DimGray" />
+                    <Setter Property="Foreground" Value="White" />
+                </Style>
+                <Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}"
+                       TargetType="{x:Type DataGridColumnHeader}">
+                    <Setter Property="Background" Value="#4F4F4F" />
+                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="#707070" />
+                    <Setter Property="Padding" Value="5"></Setter>
+                </Style>
+            </DataGrid.Resources>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Título" Width="15*" Binding="{Binding title}" />
+                <DataGridTextColumn Header="Puntos" Width="7*" Binding="{Binding points}" />
+                <DataGridTextColumn Header="Tiempo" Width="7*" Binding="{Binding time}" />
+                <DataGridTextColumn Header="Exclusivo" Width="4.5*" Binding="{Binding exclusive}" />
+                <DataGridTextColumn Header="Estado" Width="10*" Binding="{Binding state}" />
+            </DataGrid.Columns>
+        </DataGrid>
+        <Button
+            Grid.Row="7"
+            Grid.Column="6"
+            Style="{DynamicResource otherButton}"
+            HorizontalAlignment="Right"
+            Click="ClickDelete"
+            MinWidth="60">
+            Borrar
+        </Button>
+    </Grid>
+</Window>

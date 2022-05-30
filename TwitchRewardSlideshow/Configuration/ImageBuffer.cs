@@ -21,6 +21,8 @@ namespace TwitchRewardSlideshow.Configuration {
         public float usedTime { get; set; }
         public string downloadLink { get; }
         public string user { get; set; }
+        public string rewardId { get; set; }
+        public string redemptionId { get; set; }
 
         public ImageInfo(bool exclusive, float totalActiveTime, string downloadLink) {
             this.exclusive = exclusive;

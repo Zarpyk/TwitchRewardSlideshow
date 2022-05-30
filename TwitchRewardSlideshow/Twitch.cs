@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Globalization;
+using TwitchLib.Api;
+using TwitchLib.Api.Helix;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
@@ -13,6 +15,8 @@ using OnLogArgs = TwitchLib.Client.Events.OnLogArgs;
 namespace TwitchRewardSlideshow {
     public class Twitch {
         //twitch token 1otztatspp90br6j2m3sj45cfxk9va
+        private TwitchAPI api = new();
+        public Helix helix;
         public TwitchClient client = new();
         public TwitchPubSub pubSubClient = new();
 
@@ -41,6 +45,9 @@ namespace TwitchRewardSlideshow {
             ConnectionCredentials credentials;
             try {
                 credentials = new ConnectionCredentials(config.channelName, config.oauth);
+                api.Settings.ClientId = config.clientId;
+                api.Settings.AccessToken = config.oauth;
+                helix = api.Helix;
             } catch (Exception) {
                 /*App.ShowError(errorMsg);*/
                 return;

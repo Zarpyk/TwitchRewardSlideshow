@@ -20,25 +20,23 @@ namespace TwitchRewardSlideshow.Configuration {
         public char commandPrefix { get; set; } = '!';
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-        public List<RewardConfig> rewards { get; set; } = new() {
-            new RewardConfig(1800000, false, "TituloExacto30MinutosAlCarrusel"),
-            new RewardConfig(3600000, false, "TituloExacto1HoraAlCarrusel"),
-            new RewardConfig(7200000, false, "TituloExacto2HorasAlCarrusel"),
-            new RewardConfig(3600000, true, "TituloExacto1HoraALaColaDeExclusivo"),
-            new RewardConfig(7200000, true, "TituloExacto2HoraALaColaDeExclusivo"),
-            new RewardConfig(14400000, true, "TituloExacto4HoraALaColaDeExclusivo"),
-        };
+        public List<RewardConfig> rewards { get; set; } = new();
     }
 
     public class RewardConfig {
-        public int timeInMilliseconds { get; set; }
-        public bool exclusiveImage { get; set; }
+        public string id { get; set; }
         public string title { get; set; }
+        public bool exclusiveImage { get; set; }
+        public int timeInMilliseconds { get; set; }
+        public int points { get; set; }
 
-        public RewardConfig(int timeInMilliseconds, bool exclusiveImage, string title) {
+        public RewardConfig(string title, int timeInMilliseconds, bool exclusiveImage, string id = null,
+                            int points = 0) {
+            this.title = title;
             this.timeInMilliseconds = timeInMilliseconds;
             this.exclusiveImage = exclusiveImage;
-            this.title = title;
+            this.id = id;
+            this.points = points;
         }
     }
 }

@@ -27,7 +27,7 @@ namespace TwitchRewardSlideshow {
 
         public const string devName = "GuerreroBit";
         public const string productName = "TwitchRewardSlideshow";
-        public const string version = "1.4-pre2";
+        public const string version = "2.0";
 
         public static event Action OnNewImageDownloaded;
 
@@ -172,6 +172,7 @@ namespace TwitchRewardSlideshow {
                                  string.Equals(x.title,
                                                arg[0], StringComparison.InvariantCultureIgnoreCase))) {
                         ImageInfo imageInfo = InitImageInfo(reward, arg[1], chatMessage.DisplayName);
+                        imageInfo.rewardId = reward.id;
                         DownloadImage(imageInfo);
                     }
                     break;
@@ -213,10 +214,13 @@ namespace TwitchRewardSlideshow {
         }
 
         private void SortReward(object sender, OnChannelPointsRewardRedeemedArgs e) {
-            foreach (ImageInfo imageInfo in from reward in config.Get<TwitchConfig>().rewards
-                                            where reward.title == e.RewardRedeemed.Redemption.Reward.Title
-                                            select InitImageInfo(reward, e.RewardRedeemed.Redemption.UserInput,
-                                                                 e.RewardRedeemed.Redemption.User.DisplayName)) {
+            foreach (RewardConfig reward in config.Get<TwitchConfig>().rewards.Where(x =>
+                         string.Equals(x.title, e.RewardRedeemed.Redemption.Reward.Title,
+                                       StringComparison.InvariantCultureIgnoreCase))) {
+                ImageInfo imageInfo = InitImageInfo(reward, e.RewardRedeemed.Redemption.UserInput,
+                                                    e.RewardRedeemed.Redemption.User.DisplayName);
+                imageInfo.rewardId = reward.id;
+                imageInfo.redemptionId = e.RewardRedeemed.Redemption.Id;
                 DownloadImage(imageInfo);
             }
         }

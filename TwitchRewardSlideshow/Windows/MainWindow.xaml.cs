@@ -8,6 +8,8 @@ using System.Windows.Media;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using Newtonsoft.Json;
+using TwitchLib.Api.Core.Enums;
+using TwitchLib.Api.Helix.Models.ChannelPoints.UpdateCustomRewardRedemptionStatus;
 using TwitchLib.Client.Events;
 using TwitchLib.Communication.Events;
 using TwitchLib.PubSub.Events;
@@ -70,16 +72,37 @@ namespace TwitchRewardSlideshow.Windows {
             if ((time < 500 && !ignoreTimer) || !HaveMoreImage()) {
                 return;
             }
-            string user = null;
+            ImageInfo info = null;
             Dispatcher.Invoke(() => {
                 time = 0;
                 ClearImagePreview();
-                user = SendImageToFolder();
+                info = AcceptUpdateBuffer();
                 CheckNextImage();
                 OnNewImageAccepted?.Invoke();
             });
-            if (user == null) return;
-            App.twitch.SendMesage($"Se ha aceptado la imagen de {user}");
+            if (info == null) return;
+            if (info.redemptionId != null) {
+                TwitchConfig config = App.config.Get<TwitchConfig>();
+                UpdateCustomRewardRedemptionStatusRequest request = new() {
+                    Status = CustomRewardRedemptionStatus.FULFILLED
+                };
+                App.twitch.helix.ChannelPoints.UpdateRedemptionStatusAsync(config.channelId, info.rewardId,
+                                                                           new List<string> { info.redemptionId },
+                                                                           request);
+            }
+            App.twitch.SendMesage($"Se ha aceptado la imagen de {info.user}");
+        }
+
+        private ImageInfo AcceptUpdateBuffer() {
+            ImageBuffer buffer = App.config.Get<ImageBuffer>();
+            if (buffer.toCheckImages.Count == 0) return null;
+            ImageInfo imageInfo = buffer.toCheckImages.Dequeue();
+            //AppConfig config = App.config.Get<AppConfig>();
+            //imageInfo.MovePath(Path.Combine(config.imageFolder, config.acceptedImageFolder));
+            if (imageInfo.exclusive) buffer.exclusiveImagesQueue.Enqueue(imageInfo);
+            else buffer.activeImages.Add(imageInfo);
+            App.config.Set(buffer);
+            return imageInfo;
         }
 
         private void DelayTimer(object sender, ElapsedEventArgs e) {
@@ -96,20 +119,27 @@ namespace TwitchRewardSlideshow.Windows {
         }
 
         internal void RejectImage() {
-            string user = null;
+            ImageInfo info = null;
             Dispatcher.Invoke(() => {
                 ClearImagePreview();
-                user = DeleteImage();
+                info = DeleteImage();
                 CheckNextImage();
                 //ChangeLastImageInfo();
             });
-            if (user == null) return;
-            App.twitch.SendMesage($"Se ha rechazado la imagen de {user}");
+            if (info == null) return;
+            if (info.redemptionId != null) {
+                TwitchConfig config = App.config.Get<TwitchConfig>();
+                UpdateCustomRewardRedemptionStatusRequest request = new() {
+                    Status = CustomRewardRedemptionStatus.CANCELED
+                };
+                App.twitch.helix.ChannelPoints.UpdateRedemptionStatusAsync(config.channelId, info.rewardId,
+                                                                           new List<string> { info.redemptionId },
+                                                                           request);
+            }
+            App.twitch.SendMesage($"Se ha rechazado la imagen de {info.user}");
         }
-        #endregion
 
-        #region ImagePreview
-        private string DeleteImage() {
+        private ImageInfo DeleteImage() {
             ImageBuffer buffer = App.config.Get<ImageBuffer>();
             if (buffer.toCheckImages.Count == 0) return null;
             ImageInfo imageInfo = buffer.toCheckImages.Dequeue();
@@ -117,9 +147,11 @@ namespace TwitchRewardSlideshow.Windows {
                 File.Delete(imageInfo.path);
                 App.config.Set(buffer);
             } catch (IOException) { }
-            return imageInfo.user;
+            return imageInfo;
         }
+        #endregion
 
+        #region ImagePreview
         private void CheckNextImage() {
             if (HaveMoreImage()) {
                 HaveMoreImageText.Visibility = Visibility.Hidden;
@@ -148,18 +180,6 @@ namespace TwitchRewardSlideshow.Windows {
             }
             User.Content = $"Del usuario: {imageInfo.user}";
             Exclusive.Content = $"Exclusivo: {(imageInfo.exclusive ? "Sí" : "No")}";
-        }
-
-        private string SendImageToFolder() {
-            ImageBuffer buffer = App.config.Get<ImageBuffer>();
-            if (buffer.toCheckImages.Count == 0) return null;
-            ImageInfo imageInfo = buffer.toCheckImages.Dequeue();
-            //AppConfig config = App.config.Get<AppConfig>();
-            //imageInfo.MovePath(Path.Combine(config.imageFolder, config.acceptedImageFolder));
-            if (imageInfo.exclusive) buffer.exclusiveImagesQueue.Enqueue(imageInfo);
-            else buffer.activeImages.Add(imageInfo);
-            App.config.Set(buffer);
-            return imageInfo.user;
         }
 
         private bool HaveMoreImage() {
@@ -367,7 +387,8 @@ namespace TwitchRewardSlideshow.Windows {
         }
 
         private void ClickManageRewards(object sender, RoutedEventArgs e) {
-            throw new NotImplementedException();
+            ManageRewardWindow dlg = new();
+            dlg.Show();
         }
         #endregion
     }

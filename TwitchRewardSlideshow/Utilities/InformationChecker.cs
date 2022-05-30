@@ -1,11 +1,10 @@
 ﻿using System.IO;
 using TwitchRewardSlideshow.Configuration;
-using TwitchRewardSlideshow.Utilities;
 using TwitchRewardSlideshow.Windows;
 
 // ReSharper disable ArrangeObjectCreationWhenTypeNotEvident
 
-namespace TwitchRewardSlideshow {
+namespace TwitchRewardSlideshow.Utilities {
     public class InformationChecker {
         public static void CheckAll() {
             CheckOBS();

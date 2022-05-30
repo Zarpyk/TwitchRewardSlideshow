@@ -33,7 +33,9 @@
                Foreground="White">
             Texto algo para ver si cabe grr grr grr
         </Label>
-        <TextBox Name="AnswerTextBox"
+        <TextBox Name="AnswerTextBox" 
+                 Background="#FF707070"
+                 Foreground="White"
                  Grid.Column="1"
                  Grid.Row="2"
                  MinWidth="250"
