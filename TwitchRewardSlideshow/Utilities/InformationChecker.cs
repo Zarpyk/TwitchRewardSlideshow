@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Windows;
 using TwitchRewardSlideshow.Configuration;
 using TwitchRewardSlideshow.Windows;
 
@@ -93,6 +94,7 @@ namespace TwitchRewardSlideshow.Utilities {
         }
 
         public static void CheckFolders() {
+            MessageBox.Show("A continuación, selecciona una carpeta para guardar las imagenes que se van a descargar");
             AppConfig appConfig = App.config.Get<AppConfig>();
             string imageFolder = appConfig.imageFolder;
             FolderPicker dlg = new() {
