@@ -150,12 +150,12 @@ namespace TwitchRewardSlideshow {
                     //Activa un exclusivo
                     ImageInfo exclusiveImage = buffer.exclusiveImagesQueue.Dequeue();
                     buffer.activeExclusiveImage = exclusiveImage;
-                    obs.UpdateImageBuffer(buffer);
+                    obs.UpdateImageBuffer(buffer, false);
                 }
             } else {
                 //Quita el por defecto
                 if (buffer.activeExclusiveImage == null) {
-                    obs.UpdateImageBuffer(buffer);
+                    obs.UpdateImageBuffer(buffer, false);
                 }
             }
             config.Set(buffer);

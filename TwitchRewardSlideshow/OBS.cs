@@ -46,14 +46,16 @@ namespace TwitchRewardSlideshow {
             obs.Disconnect();
         }
 
-        public void UpdateImageBuffer(ImageBuffer imageBuffer) {
+        public void UpdateImageBuffer(ImageBuffer imageBuffer, bool forceUpdateTimer) {
             UpdateCarouselImages(imageBuffer, x => x.activeImages, x => x.displayedImages);
             intertalBuffer.activeExclusiveImage = imageBuffer.activeExclusiveImage;
             UpdateCarouselImages(imageBuffer, x => x.defaultImages, x => x.displayedDefaultImages);
 
-            /*obsTimer.Stop();
-            NextImage(null, null);
-            obsTimer.Start();*/
+            if (forceUpdateTimer) {
+                obsTimer.Stop();
+                NextImage(null, null);
+                obsTimer.Start();
+            }
         }
 
         private bool UpdateCarouselImages(ImageBuffer buffer,
@@ -112,6 +114,7 @@ namespace TwitchRewardSlideshow {
         private void NextDefaultImage() {
             if (intertalBuffer.defaultImages.Count == 0) {
                 if (intertalBuffer.displayedDefaultImages.Count == 0) {
+                    ChangeImageSource(null);
                     return;
                 }
                 intertalBuffer.defaultImages = new List<ImageInfo>(intertalBuffer.displayedDefaultImages);

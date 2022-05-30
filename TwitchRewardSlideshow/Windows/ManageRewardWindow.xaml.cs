@@ -41,6 +41,10 @@ namespace TwitchRewardSlideshow.Windows {
 #endif
 #if RELEASE
             List<CustomReward> twitchRewards = GetRewards();
+            if(twitchRewards == null) {
+                Close();
+                return;
+            }
             List<RewardConfig> removeReward =
                 config.rewards.Where(reward => !twitchRewards.Any(x => x.Id.Equals(reward.id))).ToList();
             config.rewards = config.rewards.Except(removeReward).ToList();
@@ -138,9 +142,14 @@ namespace TwitchRewardSlideshow.Windows {
 
         private List<CustomReward> GetRewards() {
             TwitchConfig config = App.config.Get<TwitchConfig>();
-            GetCustomRewardsResponse response =
-                App.twitch.helix.ChannelPoints.GetCustomRewardAsync(config.channelId).Result;
-            return new List<CustomReward>(response.Data);
+            GetCustomRewardsResponse response = null;
+            try {
+                response = App.twitch.helix.ChannelPoints.GetCustomRewardAsync(config.channelId).Result;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                MessageBox.Show("Hubo un error para conseguir la lista de recompensas de Twitch");
+            }
+            return response != null ? new List<CustomReward>(response.Data) : null;
         }
 
         public class RewardInfo {

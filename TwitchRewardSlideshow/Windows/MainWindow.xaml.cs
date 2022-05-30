@@ -222,13 +222,15 @@ namespace TwitchRewardSlideshow.Windows {
             AppConfig appConfig = App.config.Get<AppConfig>();
             string folder;
             if (add) {
-                folder = appConfig.defaultPosterFolder;
-                if (!Directory.Exists(folder)) {
-                    Directory.CreateDirectory(appConfig.defaultPosterFolder);
-                }
+                folder = Directory.Exists(appConfig.lastAddedImageFolder) ?
+                             appConfig.lastAddedImageFolder :
+                             appConfig.defaultPosterFolder;
             } else {
-                folder = Directory.Exists(appConfig.lastAddedImageFolder) ? appConfig.lastAddedImageFolder
-                             : appConfig.defaultPosterFolder;
+                folder = appConfig.defaultPosterFolder;
+            }
+            
+            if (!Directory.Exists(appConfig.defaultPosterFolder)) {
+                Directory.CreateDirectory(appConfig.defaultPosterFolder);
             }
 
             OpenFileDialog dlg = new() {
@@ -273,7 +275,7 @@ namespace TwitchRewardSlideshow.Windows {
                 });
             }
             App.config.Set(buffer);
-            App.obs.UpdateImageBuffer(buffer);
+            App.obs.UpdateImageBuffer(buffer, false);
         }
 
         private bool CheckExtension(string path) {
@@ -388,7 +390,11 @@ namespace TwitchRewardSlideshow.Windows {
 
         private void ClickManageRewards(object sender, RoutedEventArgs e) {
             ManageRewardWindow dlg = new();
-            dlg.Show();
+            try {
+                dlg.Show();
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
+            }
         }
         #endregion
     }
