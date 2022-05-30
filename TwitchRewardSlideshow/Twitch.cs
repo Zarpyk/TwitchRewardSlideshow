@@ -17,13 +17,20 @@ namespace TwitchRewardSlideshow {
         //twitch token 1otztatspp90br6j2m3sj45cfxk9va
         private TwitchAPI api = new();
         public Helix helix;
-        public TwitchClient client = new();
+        public TwitchClient client;
         public TwitchPubSub pubSubClient = new();
 
         private const string errorMsg = "Hubo un error de conexión a Twitch, comprueba tus datos " +
                                         "o revisa si la conexión esta disponible.";
 
         public Twitch() {
+            var clientOptions = new ClientOptions {
+                MessagesAllowedInPeriod = 750,
+                ThrottlingPeriod = TimeSpan.FromSeconds(30)
+            };
+            WebSocketClient customClient = new(clientOptions);
+            client = new TwitchClient(customClient);
+
             SetupClient();
             SetupPubSub();
         }
@@ -33,10 +40,11 @@ namespace TwitchRewardSlideshow {
             pubSubClient.Disconnect();
             SetupClient();
             SetupPubSub();
+            Connect();
         }
 
         public void Connect() {
-            client.Connect();
+            if (client.ConnectionCredentials != null) client.Connect();
             PubSubConnect();
         }
 
@@ -52,13 +60,6 @@ namespace TwitchRewardSlideshow {
                 /*App.ShowError(errorMsg);*/
                 return;
             }
-            var clientOptions = new ClientOptions {
-                MessagesAllowedInPeriod = 750,
-                ThrottlingPeriod = TimeSpan.FromSeconds(30)
-            };
-            WebSocketClient customClient = new(clientOptions);
-
-            client = new TwitchClient(customClient);
 #if DEBUG
             client.Initialize(credentials, config.destinationChannel);
 #endif
@@ -67,6 +68,10 @@ namespace TwitchRewardSlideshow {
 #endif
             client.AddChatCommandIdentifier(config.commandPrefix);
 
+            client.OnLog -= OnClientLog;
+            client.OnIncorrectLogin -= OnClientIncorrectLogin;
+            client.OnMessageReceived -= OnClientMessageReceived;
+            client.OnConnectionError -= OnClientConnectionError;
             client.OnLog += OnClientLog;
             client.OnIncorrectLogin += OnClientIncorrectLogin;
             client.OnMessageReceived += OnClientMessageReceived;
@@ -112,11 +117,16 @@ namespace TwitchRewardSlideshow {
         }
 
         public void SetupPubSub() {
+            pubSubClient.OnListenResponse -= OnPubSubListenResponse;
+            pubSubClient.OnPubSubServiceConnected -= OnPubSubServiceConnected;
+            pubSubClient.OnPubSubServiceClosed -= OnPubSubServiceClosed;
+            pubSubClient.OnPubSubServiceError -= OnPubSubServiceError;
+            pubSubClient.OnChannelPointsRewardRedeemed -= DebugReward;
+
             pubSubClient.OnListenResponse += OnPubSubListenResponse;
             pubSubClient.OnPubSubServiceConnected += OnPubSubServiceConnected;
             pubSubClient.OnPubSubServiceClosed += OnPubSubServiceClosed;
             pubSubClient.OnPubSubServiceError += OnPubSubServiceError;
-
             pubSubClient.OnChannelPointsRewardRedeemed += DebugReward;
         }
 
@@ -133,8 +143,9 @@ namespace TwitchRewardSlideshow {
         }
 
         private void OnPubSubListenResponse(object sender, OnListenResponseArgs e) {
-            Console.WriteLine(e.Successful ? $"Successfully verified listening to topic: {e.Topic}"
-                : $"Failed to listen! Error: {e.Response.Error}");
+            Console.WriteLine(e.Successful ?
+                                  $"Successfully verified listening to topic: {e.Topic}" :
+                                  $"Failed to listen! Error: {e.Response.Error}");
         }
 
         private void OnPubSubServiceClosed(object sender, EventArgs e) {

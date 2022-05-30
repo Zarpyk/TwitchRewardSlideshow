@@ -293,9 +293,13 @@ namespace TwitchRewardSlideshow.Windows {
 
         #region Twitch
         private void SetupTwitchStatus() {
+            App.twitch.pubSubClient.OnListenResponse-= OnPubSubListenResponse;
+            App.twitch.pubSubClient.OnPubSubServiceClosed -= OnPubSubClosed;
             App.twitch.pubSubClient.OnListenResponse += OnPubSubListenResponse;
             App.twitch.pubSubClient.OnPubSubServiceClosed += OnPubSubClosed;
 
+            App.twitch.client.OnConnected -= OnClientConnected;
+            App.twitch.client.OnDisconnected -= OnClientDisconnected;
             App.twitch.client.OnConnected += OnClientConnected;
             App.twitch.client.OnDisconnected += OnClientDisconnected;
         }
