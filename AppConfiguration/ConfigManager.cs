@@ -23,10 +23,10 @@ namespace AppConfiguration {
             return config.GetConfig();
         }
 
-        public bool Set<T>(Expression<Func<T, object>> variable, object value) where T : Configuration, new() {
+        /*public bool Set<T>(Expression<Func<T, object>> variable, object value) where T : Configuration, new() {
             ConfigFileManager<T> config = new(settingsPath, typeof(T).Name.ToLower() + ".json");
             return config.Set(variable, value);
-        }
+        }*/
 
         public bool Set<T>(T value) where T : Configuration, new() {
             ConfigFileManager<T> config = new(settingsPath, typeof(T).Name.ToLower() + ".json");
