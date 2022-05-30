@@ -11,6 +11,7 @@ using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.PubSub.Events;
 using TwitchRewardSlideshow.Configuration;
+using TwitchRewardSlideshow.Utilities;
 using TwitchRewardSlideshow.Utilities.ImageUtilities;
 using TwitchRewardSlideshow.Windows;
 using Application = System.Windows.Application;
@@ -27,7 +28,7 @@ namespace TwitchRewardSlideshow {
 
         public const string devName = "GuerreroBit";
         public const string productName = "TwitchRewardSlideshow";
-        public const string version = "2.1";
+        public const string version = "2.2";
 
         public static event Action OnNewImageDownloaded;
 
@@ -43,10 +44,10 @@ namespace TwitchRewardSlideshow {
 
             CheckUpdate();
 
-            /*if (config.Get<AppConfig>().firstTime) {
+            if (config.Get<AppConfig>().firstTime) {
                 InformationChecker.CheckAll();
                 config.Set<AppConfig>(x => x.firstTime, false);
-            }*/
+            }
 
             SetupTwitch();
             SetupOBS();
