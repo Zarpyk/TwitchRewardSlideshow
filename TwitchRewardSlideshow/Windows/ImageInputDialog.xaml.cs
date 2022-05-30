@@ -6,11 +6,13 @@ using XamlAnimatedGif;
 
 namespace TwitchRewardSlideshow.Windows {
     public partial class ImageInputDialog : Window {
-        public string result => AnswerTextBox.Text;
+        public string result => isSecret ? PassTextBox.Password : AnswerTextBox.Text;
+        private bool isSecret;
 
         public ImageInputDialog(string text, string imageName, bool isSecret, bool hideCancel,
-            string defaultAnswer = "") {
+                                string defaultAnswer = "") {
             InitializeComponent();
+            this.isSecret = isSecret;
             RequieredText.Content = text;
             AnswerTextBox.Text = defaultAnswer;
 
