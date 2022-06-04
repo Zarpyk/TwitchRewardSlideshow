@@ -196,6 +196,17 @@ namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
                 Console.WriteLine($"Try downloading image with {fileExtension} extension with source {uri}...");
                 byte[] imageBytes = await httpClient.GetByteArrayAsync(uri);
                 CheckValidImage(imageBytes);
+
+                /*Bitmap startBitmap = CreateBitmapFromBytes(imageBytes); // write CreateBitmapFromBytes  
+                Bitmap newBitmap = new Bitmap(newWidth, newHeight);
+                using (Graphics graphics = Graphics.FromImage(newBitmap)) {
+                    graphics.DrawImage(startBitmap, new Rectangle(0, 0, newWidth, newHeight),
+                                       new Rectangle(0, 0, startBitmap.Width, startBitmap.Height), GraphicsUnit.Pixel);
+                }
+
+                byte[] newBytes = CreateBytesFromBitmap(newBitmap); // write CreateBytesFromBitmap */
+
+                
                 await File.WriteAllBytesAsync(path, imageBytes);
                 Console.WriteLine("Image donwloaded correctly.");
                 imageInfo.path = path;

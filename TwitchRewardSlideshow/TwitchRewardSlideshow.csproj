@@ -49,6 +49,8 @@
       <Resource Include="Resources\Help_WebSocket.gif" />
       <None Remove="Resources\Help_ConfigSource.gif" />
       <Resource Include="Resources\Help_ConfigSource.gif" />
+      <None Remove="Resources\Help_FilterSource.gif" />
+      <Resource Include="Resources\Help_FilterSource.gif" />
     </ItemGroup>
 
 </Project>

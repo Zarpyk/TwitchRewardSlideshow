@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -41,7 +42,7 @@ namespace TwitchRewardSlideshow.Windows {
 #endif
 #if RELEASE
             List<CustomReward> twitchRewards = GetRewards();
-            if(twitchRewards == null) {
+            if (twitchRewards == null) {
                 Close();
                 return;
             }
@@ -107,13 +108,19 @@ namespace TwitchRewardSlideshow.Windows {
         }
 
         private void ClickAdd(object sender, RoutedEventArgs e) {
-            if (rewards.Any(x => x.title.Equals(selectedRewardInfo.title) && x.state == RewardInfo.added))
-                MessageBox.Show("Borra antes de añadir algo que ya existe");
-            if (selectedRewardInfo.title.IsNullOrEmpty()) MessageBox.Show("El titulo no puede ser vacio");
-            if (selectedRewardInfo.points <= 0) MessageBox.Show("Los puntos no pueden ser 0 o menos de 0");
-            if (selectedRewardInfo.time < 10) MessageBox.Show("El tiempo no puede ser menos de 10s");
+            selectedRewardInfo.title = TitleTextBox.Text;
+            selectedRewardInfo.time = int.Parse(TimeTextBox.Text);
+            selectedRewardInfo.points = int.Parse(PointTextBox.Text);
+            if(!CorrectValues()) return;
+            if (ExclusiveCheckBox.IsChecked == null) {
+                MessageBox.Show("What, no entiendo porque IsChecked puede ser null... " +
+                                "Esto es un BUG que no se si pasara");
+                return;
+            }
+            selectedRewardInfo.exclusive = (bool)ExclusiveCheckBox.IsChecked;
             TwitchConfig config = App.config.Get<TwitchConfig>();
             CreateCustomRewardsRequest request = new() {
+                IsEnabled = true,
                 Title = selectedRewardInfo.title,
                 Cost = selectedRewardInfo.points,
                 BackgroundColor = "#3489ff",
@@ -131,7 +138,27 @@ namespace TwitchRewardSlideshow.Windows {
             rewards.Remove(rewards.FirstOrDefault(x => x.title.Equals(responseReward.Title,
                                                                       StringComparison.InvariantCultureIgnoreCase)));
             rewards.Add(new RewardInfo(responseReward.Id, responseReward.Title, responseReward.Cost,
-                                       selectedRewardInfo.time / 1000, selectedRewardInfo.exclusive, RewardInfo.added));
+                                       selectedRewardInfo.time, selectedRewardInfo.exclusive, RewardInfo.added));
+        }
+
+        private bool CorrectValues() {
+            if (rewards.Any(x => x.title.Equals(selectedRewardInfo.title) && x.state == RewardInfo.added)) {
+                MessageBox.Show("Borra antes de añadir algo que ya existe");
+                return false;
+            }
+            if (selectedRewardInfo.title.IsNullOrEmpty()) {
+                MessageBox.Show("El titulo no puede ser vacio");
+                return false;
+            }
+            if (selectedRewardInfo.points <= 0) {
+                MessageBox.Show("Los puntos no pueden ser 0 o menos de 0");
+                return false;
+            }
+            if (selectedRewardInfo.time < 10) {
+                MessageBox.Show("El tiempo no puede ser menos de 10s");
+                return false;
+            }
+            return true;
         }
 
         private void ClickDelete(object sender, RoutedEventArgs e) {

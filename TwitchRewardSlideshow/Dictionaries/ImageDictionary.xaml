@@ -4,5 +4,4 @@
     <ImageSource x:Key="Help_CreateSource">../Resources/Help_CreateSource.gif</ImageSource>
     <ImageSource x:Key="Help_ConfigSource">../Resources/Help_ConfigSource.gif</ImageSource>
     <ImageSource x:Key="Help_FilterSource">../Resources/Help_FilterSource.gif</ImageSource>
-    <ImageSource x:Key="Help_FilterSource2">../Resources/Help_FilterSource2.gif</ImageSource>
 </ResourceDictionary>
