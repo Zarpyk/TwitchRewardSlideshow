@@ -107,7 +107,19 @@ namespace TwitchRewardSlideshow.Windows {
             changing = false;
         }
 
+        private void ClearTextBox() {
+            changing = true;
+            TitleTextBox.Text = string.Empty;
+            PointTextBox.Text = string.Empty;
+            TimeTextBox.Text = string.Empty;
+            ExclusiveCheckBox.IsChecked = false;
+            RewardsDataGrid.SelectedItem = null;
+            selectedRewardInfo = null;
+            changing = false;
+        }
+
         private void ClickAdd(object sender, RoutedEventArgs e) {
+            if (selectedRewardInfo == null) return;
             selectedRewardInfo.title = TitleTextBox.Text;
             selectedRewardInfo.time = int.Parse(TimeTextBox.Text);
             selectedRewardInfo.points = int.Parse(PointTextBox.Text);
@@ -135,6 +147,7 @@ namespace TwitchRewardSlideshow.Windows {
             CustomReward responseReward = response.Result.Data.First();
             config.rewards.Add(new RewardConfig(responseReward.Title, selectedRewardInfo.time * 1000,
                                                 selectedRewardInfo.exclusive, responseReward.Id, responseReward.Cost));
+            App.config.Set(config);
             rewards.Remove(rewards.FirstOrDefault(x => x.title.Equals(responseReward.Title,
                                                                       StringComparison.InvariantCultureIgnoreCase)));
             rewards.Add(new RewardInfo(responseReward.Id, responseReward.Title, responseReward.Cost,

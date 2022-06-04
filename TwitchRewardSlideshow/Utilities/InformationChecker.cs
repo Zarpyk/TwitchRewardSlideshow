@@ -87,7 +87,8 @@ namespace TwitchRewardSlideshow.Utilities {
                 "Para ajustar, recomiendo asignar manualmente una imagen (a la galería de imágenes) del mismo tamaño \n" +
                 "que se haya puesto anteriormente en la \"relación de aspecto\" de la galería de imágenes e ir poco \n" +
                 "a poco adaptandolo al croma para que quede bien.";
-            
+
+            //TODO no sale el gif
             ImageInputDialog webSocketIpDialog =
                 new(text, "Help_FilterSource.gif", false, true, "No hace falta nada :)");
             webSocketIpDialog.ShowDialog();
