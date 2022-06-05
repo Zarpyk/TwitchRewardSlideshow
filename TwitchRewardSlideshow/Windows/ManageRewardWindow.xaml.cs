@@ -90,7 +90,10 @@ namespace TwitchRewardSlideshow.Windows {
             if (changing) return;
             if (RewardsDataGrid.SelectedItem != null) RewardsDataGrid.UnselectAllCells();
             if (PointTextBox.Text.IsNullOrEmpty()) PointTextBox.Text = "1";
-            if (TimeTextBox.Text.IsNullOrEmpty()) TimeTextBox.Text = "10";
+            if (TimeTextBox.Text.IsNullOrEmpty())
+                TimeTextBox.Text =
+                    (App.config.Get<AppConfig>().obsInfo.slideTimeInMilliseconds / 1000.0 * 2 + 1)
+                   .ToString(CultureInfo.InvariantCulture);
             selectedRewardInfo = new RewardInfo(null, TitleTextBox.Text, int.Parse(PointTextBox.Text),
                                                 int.Parse(TimeTextBox.Text), ExclusiveCheckBox.IsChecked ?? false,
                                                 RewardInfo.notAdded);
@@ -232,8 +235,9 @@ namespace TwitchRewardSlideshow.Windows {
                 MessageBox.Show("Los puntos no pueden ser 0 o menos de 0");
                 return false;
             }
-            if (selectedRewardInfo.time < 10) {
-                MessageBox.Show("El tiempo no puede ser menos de 10s");
+            double time = App.config.Get<AppConfig>().obsInfo.slideTimeInMilliseconds / 1000.0 * 2 + 1;
+            if (selectedRewardInfo.time < time) {
+                MessageBox.Show($"El tiempo no puede ser menos de {time}s (TiempoEntreDiapositivas * 2 + 1s)");
                 return false;
             }
             return true;
