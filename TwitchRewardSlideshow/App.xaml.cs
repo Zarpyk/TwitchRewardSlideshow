@@ -17,7 +17,6 @@ using TwitchRewardSlideshow.Utilities;
 using TwitchRewardSlideshow.Utilities.ImageUtilities;
 using TwitchRewardSlideshow.Windows;
 using Application = System.Windows.Application;
-using OnLogArgs = TwitchLib.Client.Events.OnLogArgs;
 using Timer = System.Timers.Timer;
 
 namespace TwitchRewardSlideshow {
@@ -241,15 +240,6 @@ namespace TwitchRewardSlideshow {
                 imageInfo.redemptionId = e.RewardRedeemed.Redemption.Id;
                 DownloadImage(imageInfo);
             }
-        }
-
-        private void SortReward(object sender, OnLogArgs e) {
-            /*05/20/2022 20:39:07: guerrerobit - Received: @badge-info=subscriber/2;badges=vip/1,subscriber/0;client-nonce=ab34de789c07cc6131583f0d90c31b1e;color=#FF69B4;display-name=bitseer;emotes=;first-msg=0;flags=;id=f94cbeb4-5db0-4911-814a-c8f0549bf635;mod=0;room-id=42541892
-            5;subscriber=1;tmi-sent-ts=1653079147427;turbo=0;user-id=558139622;user-type= :bitseer!bitseer@bitseer.tmi.twitch.tv PRIVMSG #charditronic :chardi deberia gustarte apple porque prohibio fortnite en sus dispositivos
-            chardi deberia gustarte apple porque prohibio fortnite en sus dispositivos
-            05/20/2022 20:39:11: guerrerobit - Received: @badge-info=subscriber/2;badges=vip/1,subscriber/0,bits/100;color=#FF0000;custom-reward-id=e165d7e0-4ee7-4d84-90ff-eda1cf62db41;display-name=GuerreroBit;emotes=;first-msg=0;flags=;id=a989b40d-a0bb-436e-9af2-6a42658a8a88;m
-            od=0;room-id=425418925;subscriber=1;tmi-sent-ts=1653079151335;turbo=0;user-id=126707119;user-type= :guerrerobit!guerrerobit@guerrerobit.tmi.twitch.tv PRIVMSG #charditronic :2016
-            2016 https://dev.twitch.tv/docs/irc/example-parser */
         }
 
         private void DownloadImage(ImageInfo imageInfo) {
