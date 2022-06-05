@@ -2,7 +2,9 @@
     public class AppConfig : AppConfiguration.Configuration {
         public string imageFolder { get; set; } = string.Empty;
         public string defaultPosterFolder { get; set; } = string.Empty;
+
         public string lastAddedImageFolder { get; set; } = string.Empty;
+
         //public string tempImageFolder { get; set; } = "Temp";
         //public string acceptedImageFolder { get; set; } = "Accepted";
         public string appPrefix { get; set; } = "[Bot] ";
@@ -19,6 +21,7 @@
         public int maxGifSize { get; set; } = 10;
         public float securitySize { get; set; } = 1;
         public int slideTimeInMilliseconds { get; set; } = 5000;
+        public string aspectRatio { get; set; } = "595x842";
     }
 
     public class Message {
@@ -27,5 +30,8 @@
                                      "gyazo.com, imgur.com o subir la imagen a discord y copiar el enlace de la imagen";
         public string invalidSize = "La imagen es demasiada grande";
         public string invalidImageFormat = "Solo esta permitido PNG, JPG y GIF";
+        public string rewardMsg = "Pon el enlace de la imagen para canjearlo, puedes subirlo a discord y " +
+                                  "copiar su link o subirlo a sitios como gyazo.com o imgur.com. " +
+                                  "Se recomienda usar una imagen del tamaño: %aspect_ratio%";
     }
 }
