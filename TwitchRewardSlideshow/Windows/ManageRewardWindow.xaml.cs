@@ -28,7 +28,15 @@ namespace TwitchRewardSlideshow.Windows {
         public ManageRewardWindow() {
             InitializeComponent();
             rewards = new ObservableCollection<RewardInfo>();
-            TwitchConfig config = App.config.Get<TwitchConfig>();
+
+            DebugAddRewards();
+            if (ReleaseSetUpRewards()) return;
+
+            SetupItemList();
+        }
+
+        #region Init
+        private void DebugAddRewards() {
 #if DEBUG
             rewards.Add(new RewardInfo("Id1", "Titulo1", 100,
                                        300000 / 1000, false, RewardInfo.added));
@@ -40,11 +48,15 @@ namespace TwitchRewardSlideshow.Windows {
             rewards.Add(new RewardInfo("Id5", "Titulo5", 500, 0, false, RewardInfo.notAdded));
             rewards.Add(new RewardInfo("Id6", "Titulo6", 5000, 3600000, true, RewardInfo.added));
 #endif
+        }
+
+        private bool ReleaseSetUpRewards() {
 #if RELEASE
+            TwitchConfig config = App.config.Get<TwitchConfig>();
             List<CustomReward> twitchRewards = GetRewards();
             if (twitchRewards == null) {
                 Close();
-                return;
+                return true;
             }
             List<RewardConfig> removeReward =
                 config.rewards.Where(reward => !twitchRewards.Any(x => x.Id.Equals(reward.id))).ToList();
@@ -60,7 +72,10 @@ namespace TwitchRewardSlideshow.Windows {
                 rewards.Add(info);
             }
 #endif
+            return false;
+        }
 
+        private void SetupItemList() {
             CollectionViewSource itemSourceList = new() { Source = rewards };
             itemList = itemSourceList.View;
 
@@ -68,7 +83,9 @@ namespace TwitchRewardSlideshow.Windows {
             itemList.SortDescriptions.Add(new SortDescription("time", ListSortDirection.Ascending));
             RewardsDataGrid.ItemsSource = itemList;
         }
+        #endregion
 
+        #region UI
         private void ChangeTitleText(object sender, TextChangedEventArgs e) {
             if (changing) return;
             if (RewardsDataGrid.SelectedItem != null) RewardsDataGrid.UnselectAllCells();
@@ -117,44 +134,92 @@ namespace TwitchRewardSlideshow.Windows {
             selectedRewardInfo = null;
             changing = false;
         }
+        #endregion
 
+        #region GetRewards
+        private List<CustomReward> GetRewards() {
+            TwitchConfig config = App.config.Get<TwitchConfig>();
+            GetCustomRewardsResponse response = null;
+            try {
+                response = App.twitch.helix.ChannelPoints.GetCustomRewardAsync(config.channelId).Result;
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                MessageBox.Show("Hubo un error para conseguir la lista de recompensas de Twitch");
+            }
+            return response != null ? new List<CustomReward>(response.Data) : null;
+        }
+        #endregion
+
+        #region AddReward
         private void ClickAdd(object sender, RoutedEventArgs e) {
             if (selectedRewardInfo == null) return;
-            selectedRewardInfo.title = TitleTextBox.Text;
-            selectedRewardInfo.time = int.Parse(TimeTextBox.Text);
-            selectedRewardInfo.points = int.Parse(PointTextBox.Text);
-            if(!CorrectValues()) return;
-            if (ExclusiveCheckBox.IsChecked == null) {
-                MessageBox.Show("What, no entiendo porque IsChecked puede ser null... " +
-                                "Esto es un BUG que no se si pasara");
-                return;
-            }
-            selectedRewardInfo.exclusive = (bool)ExclusiveCheckBox.IsChecked;
+            UpdateSelectedRewardInfoValues();
+            if (!CheckValues()) return;
             TwitchConfig config = App.config.Get<TwitchConfig>();
+            Task<CreateCustomRewardsResponse> response = MakeAddRewardRequest(config);
+            if (CheckAddResponse(response)) return;
+            CustomReward responseReward = response.Result.Data.First();
+            SaveReward(config, responseReward);
+            ClearTextBox();
+        }
+
+        private Task<CreateCustomRewardsResponse> MakeAddRewardRequest(TwitchConfig config) {
+            AppConfig appConfig = App.config.Get<AppConfig>();
             CreateCustomRewardsRequest request = new() {
                 IsEnabled = true,
                 Title = selectedRewardInfo.title,
                 Cost = selectedRewardInfo.points,
                 BackgroundColor = "#3489ff",
+                Prompt = appConfig.messages.rewardMsg.Replace("%aspect_ratio%", appConfig.obsInfo.aspectRatio),
                 IsUserInputRequired = true
             };
+
+            //Send request to Twitch
             Task<CreateCustomRewardsResponse> response =
                 App.twitch.helix.ChannelPoints.CreateCustomRewardsAsync(config.channelId, request);
+            return response;
+        }
+
+        private static bool CheckAddResponse(Task<CreateCustomRewardsResponse> response) {
             if (response.Result.Data.Length == 0) {
                 MessageBox.Show("Error, no se ha podido añadir la recomensa a twitch");
-                return;
+                return true;
             }
-            CustomReward responseReward = response.Result.Data.First();
+            return false;
+        }
+
+        private void SaveReward(TwitchConfig config, CustomReward responseReward) {
+            //Save reward to Config
             config.rewards.Add(new RewardConfig(responseReward.Title, selectedRewardInfo.time * 1000,
                                                 selectedRewardInfo.exclusive, responseReward.Id, responseReward.Cost));
             App.config.Set(config);
+
+            //Remove if already exist
             rewards.Remove(rewards.FirstOrDefault(x => x.title.Equals(responseReward.Title,
                                                                       StringComparison.InvariantCultureIgnoreCase)));
+            //Add the new Reward to the list
             rewards.Add(new RewardInfo(responseReward.Id, responseReward.Title, responseReward.Cost,
                                        selectedRewardInfo.time, selectedRewardInfo.exclusive, RewardInfo.added));
         }
+        #endregion
 
-        private bool CorrectValues() {
+        #region DeleteRewards
+        private void ClickDelete(object sender, RoutedEventArgs e) {
+            TwitchConfig config = App.config.Get<TwitchConfig>();
+            App.twitch.helix.ChannelPoints.DeleteCustomRewardAsync(config.channelId, selectedRewardInfo.id);
+            rewards.Remove(selectedRewardInfo);
+        }
+        #endregion
+
+        #region UpdateRewardInfo
+        private void UpdateSelectedRewardInfoValues() {
+            selectedRewardInfo.title = TitleTextBox.Text;
+            selectedRewardInfo.time = int.Parse(TimeTextBox.Text);
+            selectedRewardInfo.points = int.Parse(PointTextBox.Text);
+            selectedRewardInfo.exclusive = (bool)ExclusiveCheckBox.IsChecked!;
+        }
+
+        private bool CheckValues() {
             if (rewards.Any(x => x.title.Equals(selectedRewardInfo.title) && x.state == RewardInfo.added)) {
                 MessageBox.Show("Borra antes de añadir algo que ya existe");
                 return false;
@@ -173,24 +238,7 @@ namespace TwitchRewardSlideshow.Windows {
             }
             return true;
         }
-
-        private void ClickDelete(object sender, RoutedEventArgs e) {
-            TwitchConfig config = App.config.Get<TwitchConfig>();
-            App.twitch.helix.ChannelPoints.DeleteCustomRewardAsync(config.channelId, selectedRewardInfo.id);
-            rewards.Remove(selectedRewardInfo);
-        }
-
-        private List<CustomReward> GetRewards() {
-            TwitchConfig config = App.config.Get<TwitchConfig>();
-            GetCustomRewardsResponse response = null;
-            try {
-                response = App.twitch.helix.ChannelPoints.GetCustomRewardAsync(config.channelId).Result;
-            } catch (Exception e) {
-                Console.WriteLine(e);
-                MessageBox.Show("Hubo un error para conseguir la lista de recompensas de Twitch");
-            }
-            return response != null ? new List<CustomReward>(response.Data) : null;
-        }
+        #endregion
 
         public class RewardInfo {
             public const string added = "Añadido";

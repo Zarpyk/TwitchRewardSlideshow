@@ -6,7 +6,8 @@
         mc:Ignorable="d"
         SizeToContent="WidthAndHeight"
         WindowStartupLocation="CenterScreen"
-        ContentRendered="WindowContentRendered"
+        ContentRendered="WindowContentRendered" 
+        ResizeMode="NoResize"
         Background="#2D2A2E">
     <Window.Resources>
         <ResourceDictionary>

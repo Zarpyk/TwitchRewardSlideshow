@@ -83,7 +83,7 @@
             <TextBlock
                 Padding="0,5,0,5"
                 Foreground="White">
-                Tiempo (segundos):
+                Tiempo en pantalla (segundos):
             </TextBlock>
         </Viewbox>
         <TextBox
@@ -92,7 +92,6 @@
             Foreground="White"
             Grid.Row="3"
             Grid.Column="0"
-            Tag="Puntos"
             TextWrapping="Wrap"
             VerticalContentAlignment="Center" 
             PreviewTextInput="NumberValidationTextBox" />
@@ -102,7 +101,6 @@
             Foreground="White"
             Grid.Row="3"
             Grid.Column="2"
-            Tag="Tiempo"
             TextWrapping="Wrap"
             VerticalContentAlignment="Center"
             PreviewTextInput="NumberValidationTextBox" />
@@ -129,6 +127,7 @@
         </Button>
         <DataGrid Name="RewardsDataGrid"
                   AutoGenerateColumns="False"
+                  HeadersVisibility="Column"
                   IsReadOnly="True"
                   Background="#707070"
                   BorderThickness="0"
