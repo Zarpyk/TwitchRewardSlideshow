@@ -38,8 +38,7 @@ namespace TwitchRewardSlideshow.Windows {
         #region Init
         private void DebugAddRewards() {
 #if DEBUG
-            rewards.Add(new RewardInfo("Id1", "Titulo1", 100,
-                                       300000 / 1000, false, RewardInfo.added));
+            rewards.Add(new RewardInfo("Id1", "Test Poster", 100, 30, false, RewardInfo.added));
             rewards.Add(new RewardInfo("Id2", "Titulo2", 100,
                                        300000 / 1000, false, RewardInfo.added));
             rewards.Add(new RewardInfo("Id3", "Titulo3", 100,
@@ -47,6 +46,14 @@ namespace TwitchRewardSlideshow.Windows {
             rewards.Add(new RewardInfo("Id4", "Titulo4", 1000000, 0, false, RewardInfo.notAdded));
             rewards.Add(new RewardInfo("Id5", "Titulo5", 500, 0, false, RewardInfo.notAdded));
             rewards.Add(new RewardInfo("Id6", "Titulo6", 5000, 3600000, true, RewardInfo.added));
+
+            TwitchConfig twitchConfig = App.config.Get<TwitchConfig>();
+            foreach (RewardInfo reward in rewards) {
+                RewardConfig config = new(reward);
+                if(twitchConfig.rewards.Exists(x=>x.id == config.id)) continue;
+                twitchConfig.rewards.Add(config);
+            }
+            App.config.Set(twitchConfig);
 #endif
         }
 

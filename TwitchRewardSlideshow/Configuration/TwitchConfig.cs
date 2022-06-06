@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
+using TwitchRewardSlideshow.Windows;
 
 namespace TwitchRewardSlideshow.Configuration {
     public class TwitchConfig : AppConfiguration.Configuration {
@@ -38,5 +39,14 @@ namespace TwitchRewardSlideshow.Configuration {
             this.id = id;
             this.points = points;
         }
+#if DEBUG
+        public RewardConfig(ManageRewardWindow.RewardInfo info) {
+            title = info.title;
+            timeInMilliseconds = info.time * 1000;
+            exclusiveImage = info.exclusive;
+            id = info.id;
+            points = info.points;
+        }
+#endif
     }
 }

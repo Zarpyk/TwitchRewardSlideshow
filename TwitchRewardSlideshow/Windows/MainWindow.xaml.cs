@@ -336,13 +336,8 @@ namespace TwitchRewardSlideshow.Windows {
                 }));
             } else {
                 OnPubSubClosed(null, null);
-#if DEBUG
-                GoToTwitchPanel();
-#endif
-#if RELEASE
                 if (e.Response.Error == "ERR_BADAUTH" && !alreadyTryGetToken) GetAuthToken();
                 else GoToTwitchPanel();
-#endif
             }
         }
 
