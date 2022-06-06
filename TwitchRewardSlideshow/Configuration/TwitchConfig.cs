@@ -28,10 +28,11 @@ namespace TwitchRewardSlideshow.Configuration {
         public string id { get; set; }
         public string title { get; set; }
         public bool exclusiveImage { get; set; }
-        public int timeInMilliseconds { get; set; }
+        public double timeInMilliseconds { get; set; }
         public int points { get; set; }
 
-        public RewardConfig(string title, int timeInMilliseconds, bool exclusiveImage, string id = null,
+        [JsonConstructor]
+        public RewardConfig(string title, double timeInMilliseconds, bool exclusiveImage, string id = null,
                             int points = 0) {
             this.title = title;
             this.timeInMilliseconds = timeInMilliseconds;

@@ -39,10 +39,8 @@ namespace TwitchRewardSlideshow.Windows {
         private void DebugAddRewards() {
 #if DEBUG
             rewards.Add(new RewardInfo("Id1", "Test Poster", 100, 30, false, RewardInfo.added));
-            rewards.Add(new RewardInfo("Id2", "Titulo2", 100,
-                                       300000 / 1000, false, RewardInfo.added));
-            rewards.Add(new RewardInfo("Id3", "Titulo3", 100,
-                                       300000 / 1000, true, RewardInfo.added));
+            rewards.Add(new RewardInfo("Id2", "Titulo2", 100, 300000 / 1000.0, false, RewardInfo.added));
+            rewards.Add(new RewardInfo("Id3", "Titulo3", 100, 300000 / 1000.0, true, RewardInfo.added));
             rewards.Add(new RewardInfo("Id4", "Titulo4", 1000000, 0, false, RewardInfo.notAdded));
             rewards.Add(new RewardInfo("Id5", "Titulo5", 500, 0, false, RewardInfo.notAdded));
             rewards.Add(new RewardInfo("Id6", "Titulo6", 5000, 3600000, true, RewardInfo.added));
@@ -50,7 +48,7 @@ namespace TwitchRewardSlideshow.Windows {
             TwitchConfig twitchConfig = App.config.Get<TwitchConfig>();
             foreach (RewardInfo reward in rewards) {
                 RewardConfig config = new(reward);
-                if(twitchConfig.rewards.Exists(x=>x.id == config.id)) continue;
+                if (twitchConfig.rewards.Exists(x => x.id == config.id)) continue;
                 twitchConfig.rewards.Add(config);
             }
             App.config.Set(twitchConfig);
@@ -180,7 +178,8 @@ namespace TwitchRewardSlideshow.Windows {
                 Title = selectedRewardInfo.title,
                 Cost = selectedRewardInfo.points,
                 BackgroundColor = "#3489ff",
-                Prompt = appConfig.messages.rewardMsg.Replace("%aspect_ratio%", appConfig.obsInfo.aspectRatio),
+                Prompt = appConfig.messages.rewardMsg.Replace("%aspect_ratio%",
+                                                              appConfig.obsInfo.aspectRatio.ToString()),
                 IsUserInputRequired = true
             };
 
@@ -258,11 +257,11 @@ namespace TwitchRewardSlideshow.Windows {
             public string id { get; set; }
             public string title { get; set; }
             public int points { get; set; }
-            public int time { get; set; }
+            public double time { get; set; }
             public bool exclusive { get; set; }
             public string state { get; set; }
 
-            public RewardInfo(string id, string title, int points, int time, bool exclusive, string state) {
+            public RewardInfo(string id, string title, int points, double time, bool exclusive, string state) {
                 this.id = id;
                 this.title = title;
                 this.points = points;

@@ -17,14 +17,14 @@ namespace TwitchRewardSlideshow.Configuration {
         public string id => Path.GetFileName(path);
         public string path { get; set; }
         public bool exclusive { get; set; }
-        public float totalActiveTime { get; set; }
-        public float usedTime { get; set; }
+        public double totalActiveTime { get; set; }
+        public double usedTime { get; set; }
         public string downloadLink { get; }
         public string user { get; set; }
         public string rewardId { get; set; }
         public string redemptionId { get; set; }
 
-        public ImageInfo(bool exclusive, float totalActiveTime, string downloadLink) {
+        public ImageInfo(bool exclusive, double totalActiveTime, string downloadLink) {
             this.exclusive = exclusive;
             this.totalActiveTime = totalActiveTime;
             this.downloadLink = downloadLink;

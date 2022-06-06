@@ -65,6 +65,7 @@ namespace TwitchRewardSlideshow.Utilities {
                         appConfig.obsInfo.slideTimeInMilliseconds = result;
                         return;
                     }
+                    MessageBox.Show("Se necesita un numero entero");
                     webSocketIpDialog = new(text, false, true,
                                             appConfig.obsInfo.slideTimeInMilliseconds.ToString());
                 } else {
@@ -81,12 +82,22 @@ namespace TwitchRewardSlideshow.Utilities {
                 "recomienda resoluciones demasiado grandes).\n\n" +
                 "Introduce la relación de aspecto que has puesto:";
             ImageInputDialog webSocketIpDialog = new(text, "Help_ConfigSource.gif", false, true,
-                                                     appConfig.obsInfo.aspectRatio);
-            if (webSocketIpDialog.ShowDialog() == true) {
-                appConfig.obsInfo.aspectRatio = webSocketIpDialog.result.Trim();
-            } else {
-                Environment.Exit(0);
-            }
+                                                     appConfig.obsInfo.aspectRatio.ToString());
+            do {
+                if (webSocketIpDialog.ShowDialog() == true) {
+                    try {
+                        appConfig.obsInfo.aspectRatio = new AspectRatio(webSocketIpDialog.result.Trim());
+                        return;
+                    } catch {
+                        MessageBox.Show("Se necesita el siguiente formato: [Width]x[Height], por ejemplo: 595x842\n" +
+                                        "Tambien se necesitan numeros enteros");
+                        webSocketIpDialog = new(text, "Help_ConfigSource.gif", false, true,
+                                                appConfig.obsInfo.aspectRatio.ToString());
+                    }
+                } else {
+                    Environment.Exit(0);
+                }
+            } while (true);
         }
 
         public static void CheckTwitchRewardMsg(ref AppConfig appConfig) {
