@@ -166,7 +166,7 @@ namespace TwitchRewardSlideshow.Windows {
         private void ShowNextImage() {
             ImageBuffer buffer = App.config.Get<ImageBuffer>();
             if (buffer.toCheckImages.Count == 0) return;
-            ImageInfo imageInfo = App.config.Get<ImageBuffer>().toCheckImages.Dequeue();
+            ImageInfo imageInfo = buffer.toCheckImages.Dequeue();
             try {
                 if (Path.GetExtension(imageInfo.path) == ".gif") {
                     AnimationBehavior.SetSourceUri(PreviewImage, new Uri(imageInfo.path));
@@ -176,6 +176,7 @@ namespace TwitchRewardSlideshow.Windows {
             } catch (Exception) {
                 PreviewImage.Source = null;
                 if (File.Exists(imageInfo.path)) File.Delete(imageInfo.path);
+                App.config.Set(buffer);
                 CheckNextImage();
             }
             User.Content = $"Del usuario: {imageInfo.user}";
