@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -10,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using PhotoSauce.MagicScaler;
 using TwitchRewardSlideshow.Configuration;
 
 namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
@@ -197,16 +199,8 @@ namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
                 byte[] imageBytes = await httpClient.GetByteArrayAsync(uri);
                 CheckValidImage(imageBytes);
 
-                /*Bitmap startBitmap = CreateBitmapFromBytes(imageBytes); // write CreateBitmapFromBytes  
-                Bitmap newBitmap = new Bitmap(newWidth, newHeight);
-                using (Graphics graphics = Graphics.FromImage(newBitmap)) {
-                    graphics.DrawImage(startBitmap, new Rectangle(0, 0, newWidth, newHeight),
-                                       new Rectangle(0, 0, startBitmap.Width, startBitmap.Height), GraphicsUnit.Pixel);
-                }
+                imageBytes = ResizeImageBytes(imageBytes);
 
-                byte[] newBytes = CreateBytesFromBitmap(newBitmap); // write CreateBytesFromBitmap */
-
-                
                 await File.WriteAllBytesAsync(path, imageBytes);
                 Console.WriteLine("Image donwloaded correctly.");
                 imageInfo.path = path;
@@ -217,6 +211,21 @@ namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
             return imageInfo;
         }
 
+        private static byte[] ResizeImageBytes(byte[] imageBytes) {
+            AppConfig config = App.config.Get<AppConfig>();
+            AspectRatio aspectRatio = config.obsInfo.aspectRatio;
+            using (MemoryStream outStream = new()) {
+                ProcessImageSettings processImageSettings = new() {
+                    Width = aspectRatio.width,
+                    Height = aspectRatio.height,
+                    ResizeMode = CropScaleMode.Stretch,
+                    HybridMode = HybridScaleMode.Turbo
+                };
+                MagicImageProcessor.ProcessImage(imageBytes, outStream, processImageSettings);
+                return outStream.ToArray();
+            }
+        }
+        
         private static void CheckValidSize(Uri uri, string fileExtension) {
             OBSInfo info = App.config.Get<AppConfig>().obsInfo;
             double imageSize = GetImageSize(uri.AbsoluteUri);

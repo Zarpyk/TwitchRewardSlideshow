@@ -225,6 +225,8 @@ namespace TwitchRewardSlideshow {
                     twitch.SendMesage("!add Test Poster:https://gyazo.com/0915089a6ccd7093eb2191091f7da67e", false);
                     twitch.SendMesage("!add Test Poster:https://imgur.com/mS8VUB6", false);
                     twitch.SendMesage("!add Test Poster:https://imgur.com/gallery/RdmEsxR", false);
+                    twitch.SendMesage("!add Test Poster:https://media.discordapp.net/attachments/960637692348072027/974837047036637194/Charditronic_tazita.gif",
+                                      false);
                     break;
                 }
             }
