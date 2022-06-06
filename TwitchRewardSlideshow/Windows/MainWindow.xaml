@@ -8,6 +8,7 @@
         Title="MainWindow"
         MinHeight="513" MinWidth="912"
         Height="720" Width="1280"
+        WindowStartupLocation="CenterScreen"
         Background="#2D2A2E">
     <Window.Resources>
         <ResourceDictionary>
