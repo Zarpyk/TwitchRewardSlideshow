@@ -63,7 +63,7 @@ namespace AppConfiguration {
 
         internal void Save() {
             using (StreamWriter writer = new(settingsPath, false)) {
-                writer.Write(JsonConvert.SerializeObject(configValues, Formatting.Indented));
+                writer.WriteAsync(JsonConvert.SerializeObject(configValues, Formatting.Indented));
             }
         }
 

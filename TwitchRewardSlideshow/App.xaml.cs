@@ -9,6 +9,7 @@ using System.Windows;
 using AppConfiguration;
 using Microsoft.Win32;
 using Octokit;
+using SQLite;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.PubSub.Events;
@@ -26,18 +27,17 @@ namespace TwitchRewardSlideshow {
     public partial class App : Application {
         public static Twitch twitch;
         public static ConfigManager config;
+        public static SQLiteConnection sqlite;
         public static OBS obs;
 
         public const string devName = "GuerreroBit";
         public const string productName = "TwitchRewardSlideshow";
         public const string version = "2.7";
 
-        public static event Action OnNewImageDownloaded;
-
-        private Timer imageTimer;
+        private Timer _imageTimer;
         private const int timerInterval = 1000;
 
-        private MainWindow window;
+        private MainWindow _window;
 
         private void AppOnStartup(object sender, StartupEventArgs e) {
             Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -57,13 +57,14 @@ namespace TwitchRewardSlideshow {
             SetupOBS();
             SetupImageTimer();
 
-            TwitchRewardSlideshow.Windows.MainWindow.OnNewImageAccepted += ChangeImagesFolder;
+            ImageManager.InitAddImageQueue();
+            ImageManager.OnNewImageAccepted += ChangeImagesFolder;
             ChangeImagesFolder();
 
-            window = new MainWindow();
+            _window = new MainWindow();
             Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
-            Current.MainWindow = window;
-            window.Show();
+            Current.MainWindow = _window;
+            _window.Show();
 
             twitch.Connect();
         }
@@ -104,9 +105,9 @@ namespace TwitchRewardSlideshow {
         private void SetupTwitch() {
             twitch = new Twitch();
             twitch.pubSubClient.OnChannelPointsRewardRedeemed -= SortReward;
-            twitch.client.OnChatCommandReceived -= SortReward;
+            twitch.client.OnChatCommandReceived -= SortCommand;
             twitch.pubSubClient.OnChannelPointsRewardRedeemed += SortReward;
-            twitch.client.OnChatCommandReceived += SortReward;
+            twitch.client.OnChatCommandReceived += SortCommand;
             //twitch.client.OnLog += SortReward;
         }
 
@@ -128,11 +129,11 @@ namespace TwitchRewardSlideshow {
         }
 
         private void SetupImageTimer() {
-            imageTimer = new Timer();
-            imageTimer.AutoReset = true;
-            imageTimer.Elapsed += UpdateImageInfo;
-            imageTimer.Interval = timerInterval;
-            imageTimer.Start();
+            _imageTimer = new Timer();
+            _imageTimer.AutoReset = true;
+            _imageTimer.Elapsed += UpdateImageInfo;
+            _imageTimer.Interval = timerInterval;
+            _imageTimer.Start();
         }
 
         private void UpdateImageInfo(object sender, ElapsedEventArgs e) {
@@ -179,30 +180,25 @@ namespace TwitchRewardSlideshow {
             config.Set(buffer);
         }
 
-        private void SortReward(object sender, OnChatCommandReceivedArgs e) {
+        private void SortCommand(object sender, OnChatCommandReceivedArgs e) {
             ChatMessage chatMessage = e.Command.ChatMessage;
             if (!chatMessage.IsBroadcaster && !chatMessage.IsModerator &&
                 chatMessage.UserId != "126707119") return;
             switch (e.Command.CommandText) {
                 case "add": {
                     string[] arg = e.Command.ArgumentsAsString.Split(':', 2);
-                    foreach (RewardConfig reward in config.Get<TwitchConfig>().rewards.Where(x =>
-                                 string.Equals(x.title,
-                                               arg[0], StringComparison.InvariantCultureIgnoreCase))) {
-                        ImageInfo imageInfo = InitImageInfo(reward, arg[1], chatMessage.DisplayName);
-                        imageInfo.rewardId = reward.id;
-                        DownloadImage(imageInfo);
-                    }
+                    string displayName = chatMessage.DisplayName;
+                    ImageManager.AddImage(arg[0], arg[1], displayName);
                     break;
                 }
                 case "accept":
                 case "ac": {
-                    window.AcceptImage(true);
+                    ImageManager.AcceptImage();
                     break;
                 }
                 case "deny":
                 case "d": {
-                    window.RejectImage();
+                    ImageManager.RejectImage();
                     break;
                 }
                 case "next": {
@@ -233,27 +229,11 @@ namespace TwitchRewardSlideshow {
         }
 
         private void SortReward(object sender, OnChannelPointsRewardRedeemedArgs e) {
-            foreach (RewardConfig reward in config.Get<TwitchConfig>().rewards.Where(x =>
-                         string.Equals(x.title, e.RewardRedeemed.Redemption.Reward.Title,
-                                       StringComparison.InvariantCultureIgnoreCase))) {
-                ImageInfo imageInfo = InitImageInfo(reward, e.RewardRedeemed.Redemption.UserInput,
-                                                    e.RewardRedeemed.Redemption.User.DisplayName);
-                imageInfo.rewardId = reward.id;
-                imageInfo.redemptionId = e.RewardRedeemed.Redemption.Id;
-                DownloadImage(imageInfo);
-            }
-        }
-
-        private void DownloadImage(ImageInfo imageInfo) {
-            if (ImageDownloader.StartDownloadImage(imageInfo)) {
-                Dispatcher.BeginInvoke(new Action(() => { OnNewImageDownloaded?.Invoke(); }));
-            }
-        }
-
-        private static ImageInfo InitImageInfo(RewardConfig reward, string url, string user) {
-            ImageInfo imageInfo = new(reward.exclusiveImage, reward.timeInMilliseconds, ImageDownloader.GetUrl(url));
-            imageInfo.user = user;
-            return imageInfo;
+            string title = e.RewardRedeemed.Redemption.Reward.Title;
+            string arg = e.RewardRedeemed.Redemption.UserInput;
+            string displayName = e.RewardRedeemed.Redemption.User.DisplayName;
+            string redemptionId = e.RewardRedeemed.Redemption.Id;
+            ImageManager.AddImage(title, arg, displayName, redemptionId);
         }
 
         public static void ShowError(string error, bool openFolder = true) {

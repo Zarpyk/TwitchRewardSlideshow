@@ -19,15 +19,12 @@ using TwitchRewardSlideshow.Utilities;
 using TwitchRewardSlideshow.Utilities.ImageUtilities;
 using TwitchRewardSlideshow.Utilities.TwitchUtilities;
 using XamlAnimatedGif;
-using FileDialog = System.Windows.Forms.FileDialog;
 
 namespace TwitchRewardSlideshow.Windows {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window {
-        public static event Action OnNewImageAccepted;
-
         private static Timer timer;
         private static int time = 500;
 
@@ -37,10 +34,13 @@ namespace TwitchRewardSlideshow.Windows {
             InitializeComponent();
             AppConfig config = App.config.Get<AppConfig>();
             BufferPathText.Text = config.imageFolder;
+            SetImagePreviewSource(null);
 
             CheckDirectories(config);
 
-            App.OnNewImageDownloaded += RefreshImage;
+            ImageManager.OnNewImageRedempted += RefreshImage;
+            ImageManager.OnNewImageAccepted += AcceptImage;
+            ImageManager.OnNewImageRejected += RejectImage;
 
             RefreshImage();
             RefreshDefaultImages();
@@ -58,51 +58,28 @@ namespace TwitchRewardSlideshow.Windows {
         }
 
         private void RefreshImage() {
-            if (PreviewImage.Source == null) {
-                ShowNextImage();
-                HaveMoreImageText.Visibility = HaveMoreImage() ? Visibility.Hidden : Visibility.Visible;
-            }
+            Dispatcher.Invoke(() => {
+                if (IsImagePreviewNull()) {
+                    ShowNextImage();
+                    HaveMoreImageText.Visibility = ImageUtils.HaveMoreImage() ? Visibility.Hidden : Visibility.Visible;
+                }
+            });
         }
 
         private void OnAcceptImage(object sender, RoutedEventArgs e) {
-            AcceptImage(false);
+            ImageManager.AcceptImage();
         }
 
-        internal void AcceptImage(bool ignoreTimer) {
-            if ((time < 500 && !ignoreTimer) || !HaveMoreImage()) {
+        internal void AcceptImage() {
+            /*if ((time < 500 && !ignoreTimer) || !HaveMoreImage()) {
                 return;
-            }
-            ImageInfo info = null;
+            }*/
             Dispatcher.Invoke(() => {
-                time = 0;
+                //time = 0;
                 ClearImagePreview();
-                info = AcceptUpdateBuffer();
                 CheckNextImage();
-                OnNewImageAccepted?.Invoke();
+                //OnNewImageAccepted?.Invoke();
             });
-            if (info == null) return;
-            if (info.redemptionId != null) {
-                TwitchConfig config = App.config.Get<TwitchConfig>();
-                UpdateCustomRewardRedemptionStatusRequest request = new() {
-                    Status = CustomRewardRedemptionStatus.FULFILLED
-                };
-                App.twitch.helix.ChannelPoints.UpdateRedemptionStatusAsync(config.channelId, info.rewardId,
-                                                                           new List<string> { info.redemptionId },
-                                                                           request);
-            }
-            App.twitch.SendMesage($"Se ha aceptado la imagen de {info.user}");
-        }
-
-        private ImageInfo AcceptUpdateBuffer() {
-            ImageBuffer buffer = App.config.Get<ImageBuffer>();
-            if (buffer.toCheckImages.Count == 0) return null;
-            ImageInfo imageInfo = buffer.toCheckImages.Dequeue();
-            //AppConfig config = App.config.Get<AppConfig>();
-            //imageInfo.MovePath(Path.Combine(config.imageFolder, config.acceptedImageFolder));
-            if (imageInfo.exclusive) buffer.exclusiveImagesQueue.Enqueue(imageInfo);
-            else buffer.activeImages.Add(imageInfo);
-            App.config.Set(buffer);
-            return imageInfo;
         }
 
         private void DelayTimer(object sender, ElapsedEventArgs e) {
@@ -115,45 +92,20 @@ namespace TwitchRewardSlideshow.Windows {
         }
 
         private void OnRejectImage(object sender, RoutedEventArgs e) {
-            RejectImage();
+            ImageManager.RejectImage();
         }
 
         internal void RejectImage() {
-            ImageInfo info = null;
             Dispatcher.Invoke(() => {
                 ClearImagePreview();
-                info = DeleteImage();
                 CheckNextImage();
-                //ChangeLastImageInfo();
             });
-            if (info == null) return;
-            if (info.redemptionId != null) {
-                TwitchConfig config = App.config.Get<TwitchConfig>();
-                UpdateCustomRewardRedemptionStatusRequest request = new() {
-                    Status = CustomRewardRedemptionStatus.CANCELED
-                };
-                App.twitch.helix.ChannelPoints.UpdateRedemptionStatusAsync(config.channelId, info.rewardId,
-                                                                           new List<string> { info.redemptionId },
-                                                                           request);
-            }
-            App.twitch.SendMesage($"Se ha rechazado la imagen de {info.user}");
-        }
-
-        private ImageInfo DeleteImage() {
-            ImageBuffer buffer = App.config.Get<ImageBuffer>();
-            if (buffer.toCheckImages.Count == 0) return null;
-            ImageInfo imageInfo = buffer.toCheckImages.Dequeue();
-            try {
-                File.Delete(imageInfo.path);
-                App.config.Set(buffer);
-            } catch (IOException) { }
-            return imageInfo;
         }
         #endregion
 
         #region ImagePreview
         private void CheckNextImage() {
-            if (HaveMoreImage()) {
+            if (ImageUtils.HaveMoreImage()) {
                 HaveMoreImageText.Visibility = Visibility.Hidden;
                 ShowNextImage();
             } else {
@@ -168,14 +120,9 @@ namespace TwitchRewardSlideshow.Windows {
             if (buffer.toCheckImages.Count == 0) return;
             ImageInfo imageInfo = buffer.toCheckImages.Dequeue();
             try {
-                if (Path.GetExtension(imageInfo.path) == ".gif") {
-                    AnimationBehavior.SetSourceUri(PreviewImage, new Uri(imageInfo.path));
-                } else {
-                    PreviewImage.Source = ImageDownloader.BitmapFromUri(new Uri(imageInfo.path!));
-                }
+                SetImagePreviewSource(imageInfo.downloadLink);
             } catch (Exception) {
-                PreviewImage.Source = null;
-                if (File.Exists(imageInfo.path)) File.Delete(imageInfo.path);
+                SetImagePreviewSource(null);
                 App.config.Set(buffer);
                 CheckNextImage();
             }
@@ -183,13 +130,22 @@ namespace TwitchRewardSlideshow.Windows {
             Exclusive.Content = $"Exclusivo: {(imageInfo.exclusive ? "Sí" : "No")}";
         }
 
-        private bool HaveMoreImage() {
-            return App.config.Get<ImageBuffer>().toCheckImages.Count > 0;
+        private void ClearImagePreview() {
+            SetImagePreviewSource(null);
         }
 
-        private void ClearImagePreview() {
-            PreviewImage.Source = null;
-            AnimationBehavior.SetSourceUri(PreviewImage, null);
+        private void SetImagePreviewSource(string url) {
+            if (url == null) {
+                ImagePreview.Source = new Uri("about:blank", UriKind.Absolute);
+                ImagePreview.Visibility = Visibility.Hidden;
+            } else {
+                ImagePreview.Source = new Uri(url);
+                ImagePreview.Visibility = Visibility.Visible;
+            }
+        }
+
+        private bool IsImagePreviewNull() {
+            return ImagePreview.Visibility is Visibility.Hidden or Visibility.Collapsed;
         }
         #endregion
 
@@ -229,7 +185,7 @@ namespace TwitchRewardSlideshow.Windows {
             } else {
                 folder = appConfig.defaultPosterFolder;
             }
-            
+
             if (!Directory.Exists(appConfig.defaultPosterFolder)) {
                 Directory.CreateDirectory(appConfig.defaultPosterFolder);
             }
@@ -294,7 +250,7 @@ namespace TwitchRewardSlideshow.Windows {
 
         #region Twitch
         private void SetupTwitchStatus() {
-            App.twitch.pubSubClient.OnListenResponse-= OnPubSubListenResponse;
+            App.twitch.pubSubClient.OnListenResponse -= OnPubSubListenResponse;
             App.twitch.pubSubClient.OnPubSubServiceClosed -= OnPubSubClosed;
             App.twitch.pubSubClient.OnListenResponse += OnPubSubListenResponse;
             App.twitch.pubSubClient.OnPubSubServiceClosed += OnPubSubClosed;
@@ -353,14 +309,14 @@ namespace TwitchRewardSlideshow.Windows {
         private void GetAuthToken() {
             Dispatcher.BeginInvoke(new Action(() => {
                 string link = TwitchInfo.GetTokenLink();
-                WebView.Source = new Uri(link);
-                WebView.SourceChanged += WebViewOnSourceChanged;
+                TwitchWeb.Source = new Uri(link);
+                TwitchWeb.SourceChanged += TwitchWebOnSourceChanged;
             }));
         }
 
-        private void WebViewOnSourceChanged(object sender, CoreWebView2SourceChangedEventArgs e) {
-            if (WebView.Source.Host.Equals("localhost")) {
-                string oauth = TwitchInfo.GetOAuth(WebView.Source.AbsoluteUri);
+        private void TwitchWebOnSourceChanged(object sender, CoreWebView2SourceChangedEventArgs e) {
+            if (TwitchWeb.Source.Host.Equals("localhost")) {
+                string oauth = TwitchInfo.GetOAuth(TwitchWeb.Source.AbsoluteUri);
                 TwitchUsersData usersData =
                     JsonConvert.DeserializeObject<TwitchUsersData>(TwitchInfo.GetUserInfo(oauth));
                 if (!TwitchInfo.SaveData(oauth, usersData)) return;
@@ -372,15 +328,15 @@ namespace TwitchRewardSlideshow.Windows {
         private void GoToTwitchPanel() {
             Dispatcher.BeginInvoke(new Action(() => {
                 TwitchConfig twitchConfig = App.config.Get<TwitchConfig>();
-                WebView.Source = new Uri("https://www.twitch.tv/login");
-                WebView.SourceChanged += (_, _) => {
-                    if (WebView.Source.Equals(new Uri("https://www.twitch.tv/?no-reload=true"))) {
+                TwitchWeb.Source = new Uri("https://www.twitch.tv/login");
+                TwitchWeb.SourceChanged += (_, _) => {
+                    if (TwitchWeb.Source.Equals(new Uri("https://www.twitch.tv/?no-reload=true"))) {
 #if DEBUG
-                        WebView.Source =
+                        TwitchWeb.Source =
                             new Uri($"https://www.twitch.tv/popout/{twitchConfig.channelName}/chat");
 #endif
 #if RELEASE
-                        WebView.Source =
+                        TwitchWeb.Source =
                             new Uri($"https://www.twitch.tv/popout/{twitchConfig.channelName}/reward-queue");
 #endif
                     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using SQLite;
 
 namespace TwitchRewardSlideshow.Configuration {
     public class ImageBuffer : AppConfiguration.Configuration {
@@ -14,12 +15,13 @@ namespace TwitchRewardSlideshow.Configuration {
     }
 
     public class ImageInfo {
+        [PrimaryKey]
         public string id => Path.GetFileName(path);
         public string path { get; set; }
         public bool exclusive { get; set; }
         public double totalActiveTime { get; set; }
         public double usedTime { get; set; }
-        public string downloadLink { get; }
+        public string downloadLink { get; set; }
         public string user { get; set; }
         public string rewardId { get; set; }
         public string redemptionId { get; set; }
