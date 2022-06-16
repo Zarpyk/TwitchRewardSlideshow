@@ -19,3 +19,5 @@ Small app for the streamer [ChardiTronic](https://www.twitch.tv/charditronic/)
 ## Next
 - Ver cual es la siguiente imagen
 - ``!next``
+## Help
+- ``!help``
