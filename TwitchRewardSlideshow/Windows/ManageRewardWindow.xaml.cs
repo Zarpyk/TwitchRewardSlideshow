@@ -13,16 +13,17 @@ using System.Windows.Input;
 using TwitchLib.Api.Helix.Models.ChannelPoints;
 using TwitchLib.Api.Helix.Models.ChannelPoints.CreateCustomReward;
 using TwitchLib.Api.Helix.Models.ChannelPoints.GetCustomReward;
+using TwitchLib.Api.Helix.Models.ChannelPoints.UpdateCustomReward;
 using TwitchRewardSlideshow.Configuration;
 using WebSocketSharp;
 
 namespace TwitchRewardSlideshow.Windows {
     public partial class ManageRewardWindow : Window {
         public ObservableCollection<RewardInfo> rewards;
-        private ICollectionView itemList;
-        private RewardInfo selectedRewardInfo;
+        private ICollectionView _itemList;
+        private RewardInfo _selectedRewardInfo;
 
-        private bool changing;
+        private bool _changing;
 
         public ManageRewardWindow() {
             InitializeComponent();
@@ -81,27 +82,27 @@ namespace TwitchRewardSlideshow.Windows {
 
         private void SetupItemList() {
             CollectionViewSource itemSourceList = new() { Source = rewards };
-            itemList = itemSourceList.View;
+            _itemList = itemSourceList.View;
 
-            itemList.SortDescriptions.Clear();
-            itemList.SortDescriptions.Add(new SortDescription("time", ListSortDirection.Ascending));
-            RewardsDataGrid.ItemsSource = itemList;
+            _itemList.SortDescriptions.Clear();
+            _itemList.SortDescriptions.Add(new SortDescription("time", ListSortDirection.Ascending));
+            RewardsDataGrid.ItemsSource = _itemList;
         }
         #endregion
 
         #region UI
         private void ChangeTitleText(object sender, TextChangedEventArgs e) {
-            if (changing) return;
+            if (_changing) return;
             if (RewardsDataGrid.SelectedItem != null) RewardsDataGrid.UnselectAllCells();
             if (PointTextBox.Text.IsNullOrEmpty()) PointTextBox.Text = "1";
             if (TimeTextBox.Text.IsNullOrEmpty())
                 TimeTextBox.Text =
                     (App.config.Get<AppConfig>().obsInfo.slideTimeInMilliseconds / 1000.0 * 2 + 1)
                    .ToString(CultureInfo.InvariantCulture);
-            selectedRewardInfo = new RewardInfo(null, TitleTextBox.Text, int.Parse(PointTextBox.Text),
+            _selectedRewardInfo = new RewardInfo(null, TitleTextBox.Text, int.Parse(PointTextBox.Text),
                                                 int.Parse(TimeTextBox.Text), ExclusiveCheckBox.IsChecked ?? false,
                                                 RewardInfo.notAdded);
-            SetRewardToUI(selectedRewardInfo);
+            SetRewardToUI(_selectedRewardInfo);
         }
 
         private void NumberValidationTextBox(object sender, TextCompositionEventArgs e) {
@@ -112,12 +113,12 @@ namespace TwitchRewardSlideshow.Windows {
         private void OnDataGridSelected(object sender, RoutedEventArgs e) {
             RewardInfo info = (RewardInfo)((DataGridRow)sender).Item;
             if (info == null) return;
-            selectedRewardInfo = info;
-            SetRewardToUI(selectedRewardInfo);
+            _selectedRewardInfo = info;
+            SetRewardToUI(_selectedRewardInfo);
         }
 
         private void SetRewardToUI(RewardInfo info) {
-            changing = true;
+            _changing = true;
             TitleTextBox.Text = info.title;
             PointTextBox.Text = info.points.ToString(CultureInfo.InvariantCulture);
             TimeTextBox.Text = info.time.ToString(CultureInfo.InvariantCulture);
@@ -128,18 +129,18 @@ namespace TwitchRewardSlideshow.Windows {
             TimeTextBox.IsEnabled = !exist;
             ExclusiveCheckBox.IsEnabled = !exist;
             AddButton.IsEnabled = !exist;
-            changing = false;
+            _changing = false;
         }
 
         private void ClearTextBox() {
-            changing = true;
+            _changing = true;
             TitleTextBox.Text = string.Empty;
             PointTextBox.Text = string.Empty;
             TimeTextBox.Text = string.Empty;
             ExclusiveCheckBox.IsChecked = false;
             RewardsDataGrid.SelectedItem = null;
-            selectedRewardInfo = null;
-            changing = false;
+            _selectedRewardInfo = null;
+            _changing = false;
         }
         #endregion
 
@@ -159,23 +160,43 @@ namespace TwitchRewardSlideshow.Windows {
 
         #region AddReward
         private void ClickAdd(object sender, RoutedEventArgs e) {
-            if (selectedRewardInfo == null) return;
+            if (_selectedRewardInfo == null) return;
             UpdateSelectedRewardInfoValues();
             if (!CheckValues()) return;
             TwitchConfig config = App.config.Get<TwitchConfig>();
-            Task<CreateCustomRewardsResponse> response = MakeAddRewardRequest(config);
-            if (CheckAddResponse(response)) return;
-            CustomReward responseReward = response.Result.Data.First();
+            CustomReward[] responseRewards = string.IsNullOrWhiteSpace(_selectedRewardInfo.id) ?
+                                                 MakeCreateRewardRequest(config).Result.Data :
+                                                 MakeUpdateRewardRequest(config).Result.Data;
+            if (CheckCreateUpdateResponse(responseRewards)) return;
+            CustomReward responseReward = responseRewards.First();
             SaveReward(config, responseReward);
             ClearTextBox();
         }
 
-        private Task<CreateCustomRewardsResponse> MakeAddRewardRequest(TwitchConfig config) {
+        private Task<UpdateCustomRewardResponse> MakeUpdateRewardRequest(TwitchConfig config) {
+            AppConfig appConfig = App.config.Get<AppConfig>();
+            UpdateCustomRewardRequest request = new() {
+                IsEnabled = true,
+                Title = _selectedRewardInfo.title,
+                Cost = _selectedRewardInfo.points,
+                BackgroundColor = "#3489ff",
+                Prompt = appConfig.messages.rewardMsg.Replace("%aspect_ratio%",
+                                                              appConfig.obsInfo.aspectRatio.ToString()),
+                IsUserInputRequired = true
+            };
+
+            //Send request to Twitch
+            Task<UpdateCustomRewardResponse> response =
+                App.twitch.helix.ChannelPoints.UpdateCustomRewardAsync(config.channelId, _selectedRewardInfo.id, request);
+            return response;
+        }
+
+        private Task<CreateCustomRewardsResponse> MakeCreateRewardRequest(TwitchConfig config) {
             AppConfig appConfig = App.config.Get<AppConfig>();
             CreateCustomRewardsRequest request = new() {
                 IsEnabled = true,
-                Title = selectedRewardInfo.title,
-                Cost = selectedRewardInfo.points,
+                Title = _selectedRewardInfo.title,
+                Cost = _selectedRewardInfo.points,
                 BackgroundColor = "#3489ff",
                 Prompt = appConfig.messages.rewardMsg.Replace("%aspect_ratio%",
                                                               appConfig.obsInfo.aspectRatio.ToString()),
@@ -188,9 +209,9 @@ namespace TwitchRewardSlideshow.Windows {
             return response;
         }
 
-        private static bool CheckAddResponse(Task<CreateCustomRewardsResponse> response) {
-            if (response.Result.Data.Length == 0) {
-                MessageBox.Show("Error, no se ha podido añadir la recomensa a twitch");
+        private static bool CheckCreateUpdateResponse(CustomReward[] responseRewards) {
+            if (responseRewards.Length == 0) {
+                MessageBox.Show("Error, no se ha podido añadir/modificar la recomensa de twitch");
                 return true;
             }
             return false;
@@ -198,8 +219,8 @@ namespace TwitchRewardSlideshow.Windows {
 
         private void SaveReward(TwitchConfig config, CustomReward responseReward) {
             //Save reward to Config
-            config.rewards.Add(new RewardConfig(responseReward.Title, selectedRewardInfo.time * 1000,
-                                                selectedRewardInfo.exclusive, responseReward.Id, responseReward.Cost));
+            config.rewards.Add(new RewardConfig(responseReward.Title, _selectedRewardInfo.time * 1000,
+                                                _selectedRewardInfo.exclusive, responseReward.Id, responseReward.Cost));
             App.config.Set(config);
 
             //Remove if already exist
@@ -207,41 +228,41 @@ namespace TwitchRewardSlideshow.Windows {
                                                                       StringComparison.InvariantCultureIgnoreCase)));
             //Add the new Reward to the list
             rewards.Add(new RewardInfo(responseReward.Id, responseReward.Title, responseReward.Cost,
-                                       selectedRewardInfo.time, selectedRewardInfo.exclusive, RewardInfo.added));
+                                       _selectedRewardInfo.time, _selectedRewardInfo.exclusive, RewardInfo.added));
         }
         #endregion
 
         #region DeleteRewards
         private void ClickDelete(object sender, RoutedEventArgs e) {
             TwitchConfig config = App.config.Get<TwitchConfig>();
-            App.twitch.helix.ChannelPoints.DeleteCustomRewardAsync(config.channelId, selectedRewardInfo.id);
-            rewards.Remove(selectedRewardInfo);
+            App.twitch.helix.ChannelPoints.DeleteCustomRewardAsync(config.channelId, _selectedRewardInfo.id);
+            rewards.Remove(_selectedRewardInfo);
         }
         #endregion
 
         #region UpdateRewardInfo
         private void UpdateSelectedRewardInfoValues() {
-            selectedRewardInfo.title = TitleTextBox.Text;
-            selectedRewardInfo.time = int.Parse(TimeTextBox.Text);
-            selectedRewardInfo.points = int.Parse(PointTextBox.Text);
-            selectedRewardInfo.exclusive = (bool)ExclusiveCheckBox.IsChecked!;
+            _selectedRewardInfo.title = TitleTextBox.Text;
+            _selectedRewardInfo.time = int.Parse(TimeTextBox.Text);
+            _selectedRewardInfo.points = int.Parse(PointTextBox.Text);
+            _selectedRewardInfo.exclusive = (bool)ExclusiveCheckBox.IsChecked!;
         }
 
         private bool CheckValues() {
-            if (rewards.Any(x => x.title.Equals(selectedRewardInfo.title) && x.state == RewardInfo.added)) {
+            if (rewards.Any(x => x.title.Equals(_selectedRewardInfo.title) && x.state == RewardInfo.added)) {
                 MessageBox.Show("Borra antes de añadir algo que ya existe");
                 return false;
             }
-            if (selectedRewardInfo.title.IsNullOrEmpty()) {
+            if (_selectedRewardInfo.title.IsNullOrEmpty()) {
                 MessageBox.Show("El titulo no puede ser vacio");
                 return false;
             }
-            if (selectedRewardInfo.points <= 0) {
+            if (_selectedRewardInfo.points <= 0) {
                 MessageBox.Show("Los puntos no pueden ser 0 o menos de 0");
                 return false;
             }
             double time = App.config.Get<AppConfig>().obsInfo.slideTimeInMilliseconds / 1000.0 * 2 + 1;
-            if (selectedRewardInfo.time < time) {
+            if (_selectedRewardInfo.time < time) {
                 MessageBox.Show($"El tiempo no puede ser menos de {time}s (TiempoEntreDiapositivas * 2 + 1s)");
                 return false;
             }
