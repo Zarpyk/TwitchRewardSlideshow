@@ -32,7 +32,8 @@
                                     "el enlace de la imagen";
         public string invalidSize = "La imagen es demasiada grande";
         public string invalidImageFormat = "Solo esta permitido PNG, JPG y GIF";
-        public string rewardMsg = "Pon el enlace de la imagen para canjearlo, puedes subirlo a discord y " +
+        public string rewardMsg = "Pon tu imagen en el poster magico por %time%. " +
+                                  "Pon el enlace de la imagen para canjearlo, puedes subirlo a discord y " +
                                   "copiar su link o subirlo a sitios como gyazo.com. " +
                                   "Se recomienda usar una imagen del tamaño: %aspect_ratio%";
     }

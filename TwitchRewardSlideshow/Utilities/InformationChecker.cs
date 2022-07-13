@@ -102,8 +102,9 @@ namespace TwitchRewardSlideshow.Utilities {
 
         public static void CheckTwitchRewardMsg(ref AppConfig appConfig) {
             const string text = "Introduce el mensaje que quieres que aparezca de descripción de las recompensas.\n" +
-                                "(Recuerda que tiene que estar el placeholder %aspect_ ratio% para que pueda ser " +
-                                "sustituida por la relación de aspecto que se ha configurado en el paso anterior)";
+                                "(Recuerda que tiene que estar el placeholder %time% y %aspect_ratio% para que " +
+                                "pueda ser sustituida por la relación de aspecto que se ha configurado en " +
+                                "el paso anterior)";
             InputDialog webSocketIpDialog = new(text, false, true, appConfig.messages.rewardMsg);
             if (webSocketIpDialog.ShowDialog() == true) {
                 appConfig.messages.rewardMsg = webSocketIpDialog.result.Trim();

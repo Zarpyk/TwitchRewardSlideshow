@@ -100,8 +100,8 @@ namespace TwitchRewardSlideshow.Windows {
                     (App.config.Get<AppConfig>().obsInfo.slideTimeInMilliseconds / 1000.0 * 2 + 1)
                    .ToString(CultureInfo.InvariantCulture);
             _selectedRewardInfo = new RewardInfo(null, TitleTextBox.Text, int.Parse(PointTextBox.Text),
-                                                int.Parse(TimeTextBox.Text), ExclusiveCheckBox.IsChecked ?? false,
-                                                RewardInfo.notAdded);
+                                                 int.Parse(TimeTextBox.Text), ExclusiveCheckBox.IsChecked ?? false,
+                                                 RewardInfo.notAdded);
             SetRewardToUI(_selectedRewardInfo);
         }
 
@@ -180,14 +180,14 @@ namespace TwitchRewardSlideshow.Windows {
                 Title = _selectedRewardInfo.title,
                 Cost = _selectedRewardInfo.points,
                 BackgroundColor = "#3489ff",
-                Prompt = appConfig.messages.rewardMsg.Replace("%aspect_ratio%",
-                                                              appConfig.obsInfo.aspectRatio.ToString()),
+                Prompt = FormatDescription(appConfig),
                 IsUserInputRequired = true
             };
 
             //Send request to Twitch
             Task<UpdateCustomRewardResponse> response =
-                App.twitch.helix.ChannelPoints.UpdateCustomRewardAsync(config.channelId, _selectedRewardInfo.id, request);
+                App.twitch.helix.ChannelPoints.UpdateCustomRewardAsync(config.channelId, _selectedRewardInfo.id,
+                                                                       request);
             return response;
         }
 
@@ -198,8 +198,7 @@ namespace TwitchRewardSlideshow.Windows {
                 Title = _selectedRewardInfo.title,
                 Cost = _selectedRewardInfo.points,
                 BackgroundColor = "#3489ff",
-                Prompt = appConfig.messages.rewardMsg.Replace("%aspect_ratio%",
-                                                              appConfig.obsInfo.aspectRatio.ToString()),
+                Prompt = FormatDescription(appConfig),
                 IsUserInputRequired = true
             };
 
@@ -207,6 +206,25 @@ namespace TwitchRewardSlideshow.Windows {
             Task<CreateCustomRewardsResponse> response =
                 App.twitch.helix.ChannelPoints.CreateCustomRewardsAsync(config.channelId, request);
             return response;
+        }
+
+        private string FormatDescription(AppConfig appConfig) {
+            string description = appConfig.messages.rewardMsg.Replace("%aspect_ratio%",
+                                                                      appConfig.obsInfo.aspectRatio.ToString());
+            double seconds = _selectedRewardInfo.time % 60;
+            double minutes = Math.Truncate(_selectedRewardInfo.time / 60);
+            double hours = Math.Truncate(minutes / 60);
+            description = hours switch {
+                <= 0 when minutes <= 0 => description.Replace("%time%", seconds.ToString(CultureInfo.InvariantCulture)),
+                <= 0 => description.Replace("%time%",
+                                            minutes.ToString(CultureInfo.InvariantCulture) + "m " +
+                                            seconds.ToString(CultureInfo.InvariantCulture) + "s"),
+                _ => description.Replace("%time%",
+                                         hours.ToString(CultureInfo.InvariantCulture) + "h" +
+                                         minutes.ToString(CultureInfo.InvariantCulture) + "m" +
+                                         seconds.ToString(CultureInfo.InvariantCulture) + "s")
+            };
+            return description;
         }
 
         private static bool CheckCreateUpdateResponse(CustomReward[] responseRewards) {

@@ -88,7 +88,7 @@ namespace TwitchRewardSlideshow {
             IReadOnlyList<Release> releases = github.Repository.Release.GetAll(devName, productName).Result;
             Release latest = releases[0];
             if (latest.TagName != version) {
-                MessageBoxResult result = MessageBox.Show("Hay una nueva version disponible ¿Quieres descargarlo?",
+                MessageBoxResult result = MessageBox.Show("Hay una nueva version disponible ¿Quieres ir a descargarlo?",
                                                           productName, MessageBoxButton.YesNo);
                 switch (result) {
                     case MessageBoxResult.Yes:
