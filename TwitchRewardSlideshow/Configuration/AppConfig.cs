@@ -27,9 +27,9 @@ namespace TwitchRewardSlideshow.Configuration {
     }
 
     public class Message {
-        public string downloadSuccess = "La imagen se ha añadido correctamente";
+        public string addSuccess = "La imagen se ha añadido correctamente a la cola de revisión";
         public string downloadFail = "La imagen no se ha podido descargar correctamente, hay que subir la imagen a " +
-                                     "gyazo.com, imgur.com o subir la imagen a discord y copiar el enlace de la imagen";
+                                     "gyazo.com o subir la imagen a discord y copiar el enlace de la imagen";
         public string invalidHost = "Hay que subir la imagen a gyazo.com o subir la imagen a discord y copiar " +
                                     "el enlace de la imagen";
         public string invalidSize = "La imagen es demasiada grande";

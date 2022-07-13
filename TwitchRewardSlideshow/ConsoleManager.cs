@@ -9,13 +9,22 @@ namespace TwitchRewardSlideshow {
         [DllImport("Kernel32.dll")]
         private static extern bool AttachConsole(int processId);
 
+        private static string path;
         private static string logPath;
 
         internal static void InitConsole() {
             AttachConsole(-1);
 
-            logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                App.devName, App.productName, "Console.log");
+            path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                                App.devName, App.productName);
+            logPath = Path.Combine(path, "Console.log");
+            
+            if (File.Exists(logPath)) {
+                if (new FileInfo(logPath).Length > 10485760) {
+                    File.Delete(logPath);
+                }
+            }
+            
             DualOut.Init();
         }
 
@@ -45,7 +54,7 @@ namespace TwitchRewardSlideshow {
         internal static void backupFile() {
             string validatedName = $"Console[{DateTime.Now:dd-MM-yyyy_HH-mm-ss}].log";
             if (!File.Exists(logPath)) File.Create(logPath);
-            File.Copy(logPath, validatedName, true);
+            File.Copy(logPath, Path.Combine(path, validatedName), true);
         }
     }
 }

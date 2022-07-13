@@ -11,12 +11,14 @@ using OBSWebsocketDotNet.Types;
 using TwitchRewardSlideshow.Configuration;
 using TwitchRewardSlideshow.Json;
 using TwitchRewardSlideshow.Utilities;
+using TwitchRewardSlideshow.Utilities.ImageUtilities;
 using WebSocketSharp;
 
 namespace TwitchRewardSlideshow {
-    public class OBS {
+    public partial class OBS {
         private OBSWebsocket obs;
         private Timer obsTimer;
+
         private ImageBuffer intertalBuffer;
 
         private SlideshowSettings settings;
@@ -25,6 +27,15 @@ namespace TwitchRewardSlideshow {
                                         "no se ha encontrado la galería de imágenes. " +
                                         "Revisa la configuración y tu OBS.";
 
+        private static ImageMode _imageMode = ImageMode.Default;
+        public static ImageMode imageMode {
+            set {
+                ImageMode oldMode = _imageMode;
+                _imageMode = value;
+                if (oldMode != _imageMode) App.obs.UpdateImageBuffer(true);
+            }
+        }
+
         public void Init() {
             obs = new OBSWebsocket();
             AppConfig appConfig = App.config.Get<AppConfig>();
@@ -32,13 +43,14 @@ namespace TwitchRewardSlideshow {
             try {
                 obs.Connect(appConfig.obsInfo.obsIP, appConfig.obsInfo.obsPass);
                 SetupTimer();
-                intertalBuffer = App.config.Get<ImageBuffer>();
+                intertalBuffer = App.buffer.Clone();
                 sourceSettings = obs.GetSourceSettings(appConfig.obsInfo.gallerySourceName);
             } catch {
                 App.ShowError(errorMsg);
                 return;
             }
             settings = JsonConvert.DeserializeObject<SlideshowSettings>(sourceSettings.Settings.ToString());
+            CheckImageMode();
         }
 
         public void Disconnect(object sender, ExitEventArgs exitEventArgs) {
@@ -46,33 +58,36 @@ namespace TwitchRewardSlideshow {
             obs.Disconnect();
         }
 
-        public void UpdateImageBuffer(ImageBuffer imageBuffer, bool forceUpdateTimer) {
-            UpdateCarouselImages(imageBuffer, x => x.activeImages, x => x.displayedImages);
-            intertalBuffer.activeExclusiveImage = imageBuffer.activeExclusiveImage;
-            UpdateCarouselImages(imageBuffer, x => x.defaultImages, x => x.displayedDefaultImages);
-
+        public void UpdateImageBuffer(bool forceUpdateTimer) {
+            UpdateCarouselImages(App.buffer, x => x.activeImages, x => x.displayedImages);
+            intertalBuffer.activeExclusiveImage = App.buffer.activeExclusiveImage;
+            UpdateCarouselImages(App.buffer, x => x.defaultImages, x => x.displayedDefaultImages);
+            
             if (forceUpdateTimer) {
                 obsTimer.Stop();
                 NextImage(null, null);
                 obsTimer.Start();
+            } else {
+                CheckImageMode();
             }
         }
 
+        // ReSharper disable once UnusedMethodReturnValue.Local
         private bool UpdateCarouselImages(ImageBuffer buffer,
-            Expression<Func<ImageBuffer, List<ImageInfo>>> active,
-            Expression<Func<ImageBuffer, List<ImageInfo>>> used) {
-            Func<ImageBuffer, List<ImageInfo>> activeF = active.Compile();
-            Func<ImageBuffer, List<ImageInfo>> usedF = used.Compile();
+                                          Expression<Func<ImageBuffer, Queue<ImageInfo>>> active,
+                                          Expression<Func<ImageBuffer, Queue<ImageInfo>>> used) {
+            Func<ImageBuffer, Queue<ImageInfo>> activeF = active.Compile();
+            Func<ImageBuffer, Queue<ImageInfo>> usedF = used.Compile();
 
-            List<ImageInfo> allOldImage = activeF(intertalBuffer).Union(usedF(intertalBuffer)).ToList();
+            Queue<ImageInfo> allOldImage = new(activeF(intertalBuffer).Union(usedF(intertalBuffer)));
 
-            List<ImageInfo> newImage = activeF(buffer).Except(allOldImage).ToList();
-            List<ImageInfo> oldImage = allOldImage.Except(activeF(buffer)).ToList();
+            Queue<ImageInfo> newImage = new(activeF(buffer).Except(allOldImage));
+            Queue<ImageInfo> oldImage = new(allOldImage.Except(activeF(buffer)));
 
             if (newImage.Count == 0 && oldImage.Count == 0) return false;
 
-            List<ImageInfo> activeV = activeF(intertalBuffer).Union(newImage).Except(oldImage).ToList();
-            List<ImageInfo> usedV = usedF(intertalBuffer).Except(oldImage).ToList();
+            Queue<ImageInfo> activeV = new(activeF(intertalBuffer).Union(newImage).Except(oldImage));
+            Queue<ImageInfo> usedV = new(usedF(intertalBuffer).Except(oldImage));
 
             OtherUtilities.AssignValue(active, intertalBuffer, activeV);
             OtherUtilities.AssignValue(used, intertalBuffer, usedV);
@@ -96,18 +111,34 @@ namespace TwitchRewardSlideshow {
             if (intertalBuffer.activeExclusiveImage == null) {
                 if (intertalBuffer.activeImages.Count == 0) {
                     if (intertalBuffer.displayedImages.Count == 0) {
+                        imageMode = ImageMode.Default;
                         NextDefaultImage();
                         return;
                     }
-                    intertalBuffer.activeImages = new List<ImageInfo>(intertalBuffer.displayedImages);
+                    intertalBuffer.activeImages = new Queue<ImageInfo>(intertalBuffer.displayedImages);
                     intertalBuffer.displayedImages.Clear();
                 }
-                ImageInfo info = intertalBuffer.activeImages.First();
-                intertalBuffer.activeImages.Remove(info);
-                intertalBuffer.displayedImages.Add(info);
+                imageMode = ImageMode.Normal;
+                ImageInfo info = intertalBuffer.activeImages.Dequeue();
+                intertalBuffer.displayedImages.Enqueue(info);
                 ChangeImageSource(info.path);
             } else {
+                imageMode = ImageMode.Exclusive;
                 ChangeImageSource(intertalBuffer.activeExclusiveImage.path);
+            }
+        }
+
+        private void CheckImageMode() {
+            if (intertalBuffer.activeExclusiveImage == null) {
+                if (intertalBuffer.activeImages.Count == 0) {
+                    if (intertalBuffer.displayedImages.Count == 0) {
+                        imageMode = ImageMode.Default;
+                        return;
+                    }
+                }
+                imageMode = ImageMode.Normal;
+            } else {
+                imageMode = ImageMode.Exclusive;
             }
         }
 
@@ -117,20 +148,20 @@ namespace TwitchRewardSlideshow {
                     ChangeImageSource(null);
                     return;
                 }
-                intertalBuffer.defaultImages = new List<ImageInfo>(intertalBuffer.displayedDefaultImages);
+                intertalBuffer.defaultImages = new Queue<ImageInfo>(intertalBuffer.displayedDefaultImages);
                 intertalBuffer.displayedDefaultImages.Clear();
             }
-            ImageInfo info = intertalBuffer.defaultImages.First();
-            intertalBuffer.defaultImages.Remove(info);
-            intertalBuffer.displayedDefaultImages.Add(info);
+            ImageInfo info = intertalBuffer.defaultImages.Dequeue();
+            intertalBuffer.displayedDefaultImages.Enqueue(info);
             ChangeImageSource(info.path);
         }
 
         private void ChangeImageSource(string path) {
             if (settings == null) return;
             string sourceName = App.config.Get<AppConfig>().obsInfo.gallerySourceName;
-            settings.files = path.IsNullOrEmpty() ? new List<FileSettings>()
-                : new List<FileSettings> { new(false, true, path) };
+            settings.files = path.IsNullOrEmpty() ?
+                                 new List<FileSettings>() :
+                                 new List<FileSettings> { new(false, true, path) };
             obs.SetSourceSettings(sourceName, JObject.Parse(JsonConvert.SerializeObject(settings)));
         }
     }

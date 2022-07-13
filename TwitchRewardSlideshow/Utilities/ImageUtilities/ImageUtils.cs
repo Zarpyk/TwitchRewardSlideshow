@@ -22,11 +22,7 @@ namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
         }
 
         public static void SaveImageToBuffer(ImageInfo imageInfo) {
-            ImageBuffer imageBuffer = App.config.Get<ImageBuffer>();
-            Queue<ImageInfo> images = imageBuffer.toCheckImages;
-            images.Enqueue(imageInfo);
-            imageBuffer.toCheckImages = images;
-            App.config.Set(imageBuffer);
+            App.buffer.toCheckImages.Enqueue(imageInfo);
         }
 
         public static string FixImageUri(Uri uri) {
@@ -38,7 +34,7 @@ namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
         }
 
         public static bool HaveMoreImage() {
-            return App.config.Get<ImageBuffer>().toCheckImages.Count > 0;
+            return App.buffer.toCheckImages.Count > 0;
         }
 
         public static ImageExtension GetImageExtensionWithUri(Uri uri) {

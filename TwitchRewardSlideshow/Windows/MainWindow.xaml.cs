@@ -116,14 +116,13 @@ namespace TwitchRewardSlideshow.Windows {
         }
 
         private void ShowNextImage() {
-            ImageBuffer buffer = App.config.Get<ImageBuffer>();
-            if (buffer.toCheckImages.Count == 0) return;
-            ImageInfo imageInfo = buffer.toCheckImages.Dequeue();
+            if (App.buffer.toCheckImages.Count == 0) return;
+            ImageInfo imageInfo = App.buffer.toCheckImages.Peek();
             try {
                 SetImagePreviewSource(imageInfo.downloadLink);
             } catch (Exception) {
                 SetImagePreviewSource(null);
-                App.config.Set(buffer);
+                App.buffer.toCheckImages.Dequeue();
                 CheckNextImage();
             }
             User.Content = $"Del usuario: {imageInfo.user}";
@@ -224,15 +223,13 @@ namespace TwitchRewardSlideshow.Windows {
         private void RefreshDefaultImages() {
             AppConfig config = App.config.Get<AppConfig>();
             if (config.defaultPosterFolder.Equals(string.Empty)) return;
-            ImageBuffer buffer = App.config.Get<ImageBuffer>();
-            buffer.defaultImages = new List<ImageInfo>();
+            App.buffer.defaultImages = new Queue<ImageInfo>();
             foreach (string path in Directory.GetFiles(config.defaultPosterFolder).Where(CheckExtension)) {
-                buffer.defaultImages.Add(new ImageInfo(false, 999999999999, null) {
+                App.buffer.defaultImages.Enqueue(new ImageInfo(false, 999999999999, null) {
                     path = path
                 });
             }
-            App.config.Set(buffer);
-            App.obs.UpdateImageBuffer(buffer, false);
+            App.obs.UpdateImageBuffer(false);
         }
 
         private bool CheckExtension(string path) {

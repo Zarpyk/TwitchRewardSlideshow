@@ -9,7 +9,6 @@ using System.Windows;
 using AppConfiguration;
 using Microsoft.Win32;
 using Octokit;
-using SQLite;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.PubSub.Events;
@@ -27,17 +26,28 @@ namespace TwitchRewardSlideshow {
     public partial class App : Application {
         public static Twitch twitch;
         public static ConfigManager config;
-        public static SQLiteConnection sqlite;
         public static OBS obs;
+
+        public static ImageBuffer buffer;
 
         public const string devName = "GuerreroBit";
         public const string productName = "TwitchRewardSlideshow";
         public const string version = "2.7";
 
         private Timer _imageTimer;
-        private const int timerInterval = 1000;
+        private const int imageTimerInterval = 1000;
 
+        private Timer _bufferTimer;
+#if DEBUG
+        private const int bufferTimerInterval = 2000;
+#endif
+#if RELEASE
+        private const int bufferTimerInterval = 10000;
+#endif
+        
         private MainWindow _window;
+        
+        private bool changeImageMode;
 
         private void AppOnStartup(object sender, StartupEventArgs e) {
             Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -55,9 +65,8 @@ namespace TwitchRewardSlideshow {
 
             SetupTwitch();
             SetupOBS();
-            SetupImageTimer();
+            SetupTimers();
 
-            ImageManager.InitAddImageQueue();
             ImageManager.OnNewImageAccepted += ChangeImagesFolder;
             ChangeImagesFolder();
 
@@ -67,6 +76,11 @@ namespace TwitchRewardSlideshow {
             _window.Show();
 
             twitch.Connect();
+        }
+
+        protected override void OnExit(ExitEventArgs e) {
+            SaveBuffer(null, null);
+            base.OnExit(e);
         }
 
         private void CheckUpdate() {
@@ -92,13 +106,16 @@ namespace TwitchRewardSlideshow {
         private void SetupConsole() {
             ConsoleManager.InitConsole();
             DispatcherUnhandledException += ConsoleManager.App_DispatcherUnhandledException;
+#if DEBUG
             Exit += (_, _) => ConsoleManager.backupFile();
+#endif
         }
 
         private void SetupConfig() {
             config = new ConfigManager(devName, productName);
             config.Set(config.Get<AppConfig>());
-            config.Set(config.Get<ImageBuffer>());
+            buffer = config.Get<ImageBuffer>();
+            config.Set(buffer);
             config.Set(config.Get<TwitchConfig>());
         }
 
@@ -128,56 +145,67 @@ namespace TwitchRewardSlideshow {
             Exit += obs.Disconnect;
         }
 
-        private void SetupImageTimer() {
+        private void SetupTimers() {
             _imageTimer = new Timer();
             _imageTimer.AutoReset = true;
             _imageTimer.Elapsed += UpdateImageInfo;
-            _imageTimer.Interval = timerInterval;
+            _imageTimer.Interval = imageTimerInterval;
             _imageTimer.Start();
+
+            _bufferTimer = new Timer();
+            _bufferTimer.AutoReset = true;
+            _bufferTimer.Elapsed += SaveBuffer;
+            _bufferTimer.Interval = bufferTimerInterval;
+            _bufferTimer.Start();
         }
 
         private void UpdateImageInfo(object sender, ElapsedEventArgs e) {
-            ImageBuffer buffer = config.Get<ImageBuffer>();
             if (buffer.activeExclusiveImage == null) {
                 List<ImageInfo> deleteImage = new();
-                foreach (ImageInfo info in buffer.activeImages.Union(buffer.displayedImages).ToList()) {
-                    info.usedTime += timerInterval;
+                foreach (ImageInfo info in buffer.activeImages.ToList()) {
+                    info.usedTime += imageTimerInterval;
                     Console.WriteLine(info.usedTime);
                     if (info.usedTime >= info.totalActiveTime) {
                         File.Delete(info.path);
                         deleteImage.Add(info);
+                        changeImageMode = true;
                     }
                 }
-                buffer.activeImages = buffer.activeImages.Except(deleteImage).ToList();
-                buffer.displayedImages = buffer.displayedImages.Except(deleteImage).ToList();
+                buffer.activeImages = new Queue<ImageInfo>(buffer.activeImages.Except(deleteImage));
             } else {
-                buffer.activeExclusiveImage.usedTime += timerInterval;
+                buffer.activeExclusiveImage.usedTime += imageTimerInterval;
                 if (buffer.activeExclusiveImage.usedTime >= buffer.activeExclusiveImage.totalActiveTime) {
                     File.Delete(buffer.activeExclusiveImage.path);
                     buffer.activeExclusiveImage = null;
+                    changeImageMode = true;
                 }
             }
-            config.Set(buffer);
             ChangeImagesFolder();
         }
 
+        private void SaveBuffer(object sender, ElapsedEventArgs e) {
+            config.Set(buffer);
+        }
+
         private void ChangeImagesFolder() {
-            ImageBuffer buffer = config.Get<ImageBuffer>();
             if (buffer.exclusiveImagesQueue.Count > 0) {
                 //Si no hay ya una exclusiva o la exclusiva no es el por defecto
                 if (buffer.activeExclusiveImage == null) {
                     //Activa un exclusivo
                     ImageInfo exclusiveImage = buffer.exclusiveImagesQueue.Dequeue();
                     buffer.activeExclusiveImage = exclusiveImage;
-                    obs.UpdateImageBuffer(buffer, false);
+                    obs.UpdateImageBuffer(false);
                 }
             } else {
                 //Quita el por defecto
                 if (buffer.activeExclusiveImage == null) {
-                    obs.UpdateImageBuffer(buffer, false);
+                    obs.UpdateImageBuffer(false);
                 }
             }
-            config.Set(buffer);
+            if(changeImageMode) {
+                obs.UpdateImageBuffer(true);
+                changeImageMode = false;
+            }
         }
 
         private void SortCommand(object sender, OnChatCommandReceivedArgs e) {
@@ -202,7 +230,6 @@ namespace TwitchRewardSlideshow {
                     break;
                 }
                 case "next": {
-                    ImageBuffer buffer = config.Get<ImageBuffer>();
                     if (buffer.toCheckImages.Count == 0) twitch.SendMesage("No hay más imagenes para comprobar");
                     ImageInfo info = buffer.toCheckImages.Dequeue();
                     twitch.SendMesage($"La proxima imagen ({(info.exclusive ? "Exclusiva" : "No exclusiva")})" +

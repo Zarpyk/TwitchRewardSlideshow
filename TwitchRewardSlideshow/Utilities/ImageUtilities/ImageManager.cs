@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Timers;
 using TwitchLib.Api.Core.Enums;
 using TwitchLib.Api.Helix.Models.ChannelPoints.UpdateCustomRewardRedemptionStatus;
 using TwitchRewardSlideshow.Configuration;
@@ -18,21 +17,6 @@ namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
         public static event Action OnNewImageRedempted;
         public static event Action OnNewImageAccepted;
         public static event Action OnNewImageRejected;
-
-        public static Queue<ImageInfo> addImageQueue = new();
-
-        private static Timer _imageTimer = new();
-        private const int timerInterval = 1000;
-        private static bool adding;
-        private static int addingLenght;
-
-        public static void InitAddImageQueue() {
-            _imageTimer = new Timer();
-            _imageTimer.AutoReset = true;
-            _imageTimer.Elapsed += ApplyBuffer;
-            _imageTimer.Interval = timerInterval;
-            _imageTimer.Start();
-        }
 
         public static void AddImage(string title, string arg, string userName, string redemptionId = null) {
             foreach (RewardConfig reward in App.config.Get<TwitchConfig>().rewards.Where(x =>
@@ -78,48 +62,30 @@ namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
             }
             ImageInfo info = DequeueImage();
             OnNewImageAccepted?.Invoke();
-            addingLenght += 1;
             Task.Run(() => {
                 info = AcceptUpdateBuffer(info).Result;
                 if (info == null) return;
                 ChangePointStatus(info, true);
                 App.twitch.SendMesage($"Se ha aceptado la imagen de {info.user}");
-                addingLenght -= 1;
             });
         }
 
         private static ImageInfo DequeueImage() {
-            ImageBuffer buffer = App.config.Get<ImageBuffer>();
-            if (buffer.toCheckImages.Count == 0) return null;
-            ImageInfo info = buffer.toCheckImages.Dequeue();
-            App.config.Set(buffer);
+            if (App.buffer.toCheckImages.Count == 0) return null;
+            ImageInfo info = App.buffer.toCheckImages.Dequeue();
             return info;
         }
 
         private static async Task<ImageInfo> AcceptUpdateBuffer(ImageInfo info) {
             ImageInfo downloadedInfo = await ImageDownloader.StartDownloadImage(info);
             if (downloadedInfo != null) {
-                addImageQueue.Enqueue(downloadedInfo);
+                if (downloadedInfo.exclusive) App.buffer.exclusiveImagesQueue.Enqueue(downloadedInfo);
+                else App.buffer.activeImages.Enqueue(downloadedInfo);
             } else {
                 ChangePointStatus(info, false);
                 return null;
             }
             return info;
-        }
-
-        private static void ApplyBuffer(object sender, ElapsedEventArgs elapsedEventArgs) {
-            if (addImageQueue.Count == 0 || adding || addingLenght != 0) return;
-            adding = true;
-            ImageBuffer buffer = App.config.Get<ImageBuffer>();
-            int lenght = addImageQueue.Count;
-            for (int i = 0; i < lenght; i++) {
-                ImageInfo info = addImageQueue.Dequeue();
-                if (info.exclusive) buffer.exclusiveImagesQueue.Enqueue(info);
-                else buffer.activeImages.Add(info);
-            }
-            Console.WriteLine("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"); //TODO En alguna otra parte salta error de set
-            App.config.Set(buffer);
-            adding = false;
         }
 
         public static void RejectImage() {
@@ -131,15 +97,13 @@ namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
         }
 
         private static ImageInfo DeleteImage() {
-            ImageBuffer buffer = App.config.Get<ImageBuffer>();
-            if (buffer.toCheckImages.Count == 0) return null;
-            ImageInfo imageInfo = buffer.toCheckImages.Dequeue();
+            if (App.buffer.toCheckImages.Count == 0) return null;
+            ImageInfo imageInfo = App.buffer.toCheckImages.Dequeue();
             if (imageInfo.path != null) {
                 try {
                     File.Delete(imageInfo.path);
                 } catch (IOException) { }
             }
-            App.config.Set(buffer);
             return imageInfo;
         }
 
@@ -158,7 +122,7 @@ namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
         private static void SaveImage(ImageInfo imageInfo) {
             AppConfig appConfig = App.config.Get<AppConfig>();
             ImageUtils.SaveImageToBuffer(imageInfo);
-            App.twitch.SendMesage(appConfig.messages.downloadSuccess);
+            App.twitch.SendMesage(appConfig.messages.addSuccess);
         }
     }
 }

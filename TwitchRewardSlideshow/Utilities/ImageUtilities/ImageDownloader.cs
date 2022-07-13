@@ -49,14 +49,6 @@ namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
             }
         }
 
-        private static void SaveBuffer(ImageInfo imageInfo) {
-            ImageBuffer imageBuffer = App.config.Get<ImageBuffer>();
-            Queue<ImageInfo> images = imageBuffer.toCheckImages;
-            images.Enqueue(imageInfo);
-            imageBuffer.toCheckImages = images;
-            App.config.Set(imageBuffer);
-        }
-
         /// <summary>
         /// 
         /// </summary>
@@ -102,7 +94,7 @@ namespace TwitchRewardSlideshow.Utilities.ImageUtilities {
                     Width = aspectRatio.width,
                     Height = aspectRatio.height,
                     ResizeMode = CropScaleMode.Stretch,
-                    HybridMode = HybridScaleMode.Turbo
+                    HybridMode = HybridScaleMode.FavorQuality
                 };
                 MagicImageProcessor.ProcessImage(imageBytes, outStream, processImageSettings);
                 return outStream.ToArray();
