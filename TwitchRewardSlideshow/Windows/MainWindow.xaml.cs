@@ -8,8 +8,6 @@ using System.Windows.Media;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using Newtonsoft.Json;
-using TwitchLib.Api.Core.Enums;
-using TwitchLib.Api.Helix.Models.ChannelPoints.UpdateCustomRewardRedemptionStatus;
 using TwitchLib.Client.Events;
 using TwitchLib.Communication.Events;
 using TwitchLib.PubSub.Events;
@@ -18,7 +16,6 @@ using TwitchRewardSlideshow.Json;
 using TwitchRewardSlideshow.Utilities;
 using TwitchRewardSlideshow.Utilities.ImageUtilities;
 using TwitchRewardSlideshow.Utilities.TwitchUtilities;
-using XamlAnimatedGif;
 
 namespace TwitchRewardSlideshow.Windows {
     /// <summary>

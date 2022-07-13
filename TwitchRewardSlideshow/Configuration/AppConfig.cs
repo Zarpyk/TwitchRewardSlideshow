@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace TwitchRewardSlideshow.Configuration {
+﻿namespace TwitchRewardSlideshow.Configuration {
     public class AppConfig : AppConfiguration.Configuration {
         public string imageFolder { get; set; } = string.Empty;
         public string defaultPosterFolder { get; set; } = string.Empty;
@@ -35,7 +33,7 @@ namespace TwitchRewardSlideshow.Configuration {
         public string invalidSize = "La imagen es demasiada grande";
         public string invalidImageFormat = "Solo esta permitido PNG, JPG y GIF";
         public string rewardMsg = "Pon el enlace de la imagen para canjearlo, puedes subirlo a discord y " +
-                                  "copiar su link o subirlo a sitios como gyazo.com o imgur.com. " +
+                                  "copiar su link o subirlo a sitios como gyazo.com. " +
                                   "Se recomienda usar una imagen del tamaño: %aspect_ratio%";
     }
 
