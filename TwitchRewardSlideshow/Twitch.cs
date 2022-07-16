@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using TwitchLib.Api;
+using TwitchLib.Api.Auth;
 using TwitchLib.Api.Helix;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
@@ -10,20 +12,20 @@ using TwitchLib.Communication.Models;
 using TwitchLib.PubSub;
 using TwitchLib.PubSub.Events;
 using TwitchRewardSlideshow.Configuration;
+using TwitchRewardSlideshow.Utilities.TwitchUtilities;
 using OnLogArgs = TwitchLib.Client.Events.OnLogArgs;
 
 namespace TwitchRewardSlideshow {
     public class Twitch {
         //twitch token 1otztatspp90br6j2m3sj45cfxk9va
-        private TwitchAPI api = new();
+        private TwitchAPI _api = new();
         public Helix helix;
         public TwitchClient client;
         public TwitchPubSub pubSubClient = new();
 
-        private const string errorMsg = "Hubo un error de conexión a Twitch, comprueba tus datos " +
-                                        "o revisa si la conexión esta disponible.";
-
         public Twitch() {
+            ValidConfig();
+
             var clientOptions = new ClientOptions {
                 MessagesAllowedInPeriod = 750,
                 ThrottlingPeriod = TimeSpan.FromSeconds(30)
@@ -31,6 +33,7 @@ namespace TwitchRewardSlideshow {
             WebSocketClient customClient = new(clientOptions);
             client = new TwitchClient(customClient);
 
+            SetupApi();
             SetupClient();
             SetupPubSub();
         }
@@ -38,6 +41,7 @@ namespace TwitchRewardSlideshow {
         public void RestartAll() {
             client.Disconnect();
             pubSubClient.Disconnect();
+            SetupApi();
             SetupClient();
             SetupPubSub();
             Connect();
@@ -48,14 +52,47 @@ namespace TwitchRewardSlideshow {
             PubSubConnect();
         }
 
+        private bool ValidConfig() {
+            TwitchConfig config = App.config.Get<TwitchConfig>();
+            if (string.IsNullOrWhiteSpace(config.channelName) ||
+                string.IsNullOrWhiteSpace(config.channelId) ||
+                string.IsNullOrWhiteSpace(config.oauth)) {
+                TwitchUtilities.ResetTwitchConfig(config);
+                return false;
+            }
+            ValidateAccessTokenResponse info = TwitchUtilities.GetUserOAuthInfo(config.oauth);
+            if (info == null) {
+                TwitchUtilities.ResetTwitchConfig(config);
+                return false;
+            }
+            HashSet<string> scopes = new(info.Scopes);
+            if (!string.Equals(info.ClientId, config.clientId, StringComparison.InvariantCultureIgnoreCase) ||
+                !string.Equals(info.Login, config.channelName, StringComparison.InvariantCultureIgnoreCase) ||
+                !string.Equals(info.UserId, config.channelId, StringComparison.InvariantCultureIgnoreCase) ||
+                info.ExpiresIn <= 86400 ||
+                !scopes.SetEquals(TwitchUtilities.scopes)) {
+                TwitchUtilities.ResetTwitchConfig(config, info);
+                return false;
+            }
+            return true;
+        }
+
+        private void SetupApi() {
+            TwitchConfig config = App.config.Get<TwitchConfig>();
+            try {
+                _api.Settings.ClientId = config.clientId;
+                _api.Settings.AccessToken = config.oauth;
+                helix = _api.Helix;
+            } catch (Exception) {
+                /*App.ShowError(errorMsg);*/
+            }
+        }
+
         public void SetupClient() {
             TwitchConfig config = App.config.Get<TwitchConfig>();
             ConnectionCredentials credentials;
             try {
                 credentials = new ConnectionCredentials(config.channelName, config.oauth);
-                api.Settings.ClientId = config.clientId;
-                api.Settings.AccessToken = config.oauth;
-                helix = api.Helix;
             } catch (Exception) {
                 /*App.ShowError(errorMsg);*/
                 return;
@@ -72,20 +109,31 @@ namespace TwitchRewardSlideshow {
             client.OnIncorrectLogin -= OnClientIncorrectLogin;
             client.OnMessageReceived -= OnClientMessageReceived;
             client.OnConnectionError -= OnClientConnectionError;
+            client.OnNoPermissionError -= OnClientNoPermissionError;
             client.OnLog += OnClientLog;
             client.OnIncorrectLogin += OnClientIncorrectLogin;
             client.OnMessageReceived += OnClientMessageReceived;
             client.OnConnectionError += OnClientConnectionError;
+            client.OnNoPermissionError += OnClientNoPermissionError;
         }
 
         private void OnClientIncorrectLogin(object sender, OnIncorrectLoginArgs e) {
             Console.WriteLine(e.Exception);
-            /*App.ShowError(errorMsg);*/
         }
 
         private void OnClientConnectionError(object sender, OnConnectionErrorArgs e) {
             Console.WriteLine(e.Error);
-            /*App.ShowError(errorMsg);*/
+        }
+
+        private void OnClientNoPermissionError(object sender, EventArgs e) {
+            Console.WriteLine(e.ToString());
+            if (!ValidConfig()) {
+                App.ShowError(App.config.Get<AppConfig>().messages.noPermissionMsg);
+                Environment.Exit(0);
+            } else {
+                App.ShowError("BUG: No hay permiso suficiente para alguna acción F, contactame :'( otro bug más.");
+                Environment.Exit(0);
+            }
         }
 
         public void SendMesage(string msg, bool withPrefix = true) {

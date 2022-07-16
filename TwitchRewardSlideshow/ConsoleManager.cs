@@ -48,13 +48,13 @@ namespace TwitchRewardSlideshow {
 
         internal static void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e) {
             File.AppendAllText(logPath, e.Exception + "\n");
-            backupFile();
+            //backupFile();
         }
 
-        internal static void backupFile() {
+        /*internal static void backupFile() {
             string validatedName = $"Console[{DateTime.Now:dd-MM-yyyy_HH-mm-ss}].log";
             if (!File.Exists(logPath)) File.Create(logPath);
             File.Copy(logPath, Path.Combine(path, validatedName), true);
-        }
+        }*/
     }
 }

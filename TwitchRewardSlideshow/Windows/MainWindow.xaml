@@ -194,10 +194,10 @@
             </Grid>
             <Grid Grid.Column="2" Grid.Row="6">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="35*" />
                     <RowDefinition Height="10*" />
                     <RowDefinition Height="35*" />
                     <RowDefinition Height="20*" />
-                    <RowDefinition Height="10*" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="50*" />
@@ -206,11 +206,18 @@
                     <ColumnDefinition Width="100*" />
                     <ColumnDefinition Width="50*" />
                 </Grid.ColumnDefinitions>
+                <Button
+                    Click="ClickResetToken"
+                    Content="Reset token (Usar en caso de fallo de conexión)"
+                    Grid.Column="1"
+                    Grid.ColumnSpan="3"
+                    Grid.Row="0"
+                    Style="{DynamicResource otherButton}" />
                 <TextBlock
                     FontSize="9"
                     Foreground="Red"
                     Grid.Column="1"
-                    Grid.Row="1"
+                    Grid.Row="2"
                     HorizontalAlignment="Center"
                     TextWrapping="Wrap"
                     VerticalAlignment="Center"
@@ -222,13 +229,13 @@
                     Content="Recargar Reward"
                     FontSize="11"
                     Grid.Column="1"
-                    Grid.Row="2"
+                    Grid.Row="3"
                     Style="{DynamicResource otherButton}" />
                 <TextBlock
                     FontSize="9"
                     Foreground="Red"
                     Grid.Column="3"
-                    Grid.Row="1"
+                    Grid.Row="2"
                     HorizontalAlignment="Center"
                     Name="ChatStatusText"
                     TextWrapping="Wrap"
@@ -240,7 +247,7 @@
                     Content="Recargar Chat"
                     FontSize="11"
                     Grid.Column="3"
-                    Grid.Row="2"
+                    Grid.Row="3"
                     Style="{DynamicResource otherButton}" />
             </Grid>
             <wpf:WebView2

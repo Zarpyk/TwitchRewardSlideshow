@@ -107,7 +107,7 @@ namespace TwitchRewardSlideshow {
             ConsoleManager.InitConsole();
             DispatcherUnhandledException += ConsoleManager.App_DispatcherUnhandledException;
 #if DEBUG
-            Exit += (_, _) => ConsoleManager.backupFile();
+            //Exit += (_, _) => ConsoleManager.backupFile();
 #endif
         }
 

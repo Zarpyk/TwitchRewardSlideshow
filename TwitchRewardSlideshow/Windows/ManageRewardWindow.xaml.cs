@@ -215,7 +215,8 @@ namespace TwitchRewardSlideshow.Windows {
             double minutes = Math.Truncate(_selectedRewardInfo.time / 60);
             double hours = Math.Truncate(minutes / 60);
             description = hours switch {
-                <= 0 when minutes <= 0 => description.Replace("%time%", seconds.ToString(CultureInfo.InvariantCulture)),
+                <= 0 when minutes <= 0 => description.Replace("%time%",
+                                                              seconds.ToString(CultureInfo.InvariantCulture) + "s"),
                 <= 0 => description.Replace("%time%",
                                             minutes.ToString(CultureInfo.InvariantCulture) + "m " +
                                             seconds.ToString(CultureInfo.InvariantCulture) + "s"),

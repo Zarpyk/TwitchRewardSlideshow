@@ -8,6 +8,8 @@ using System.Windows.Media;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using Newtonsoft.Json;
+using TwitchLib.Api.Auth;
+using TwitchLib.Api.Helix.Models.Users.GetUsers;
 using TwitchLib.Client.Events;
 using TwitchLib.Communication.Events;
 using TwitchLib.PubSub.Events;
@@ -302,7 +304,7 @@ namespace TwitchRewardSlideshow.Windows {
 
         private void GetAuthToken() {
             Dispatcher.BeginInvoke(new Action(() => {
-                string link = TwitchInfo.GetTokenLink();
+                string link = TwitchUtilities.GetTokenLink();
                 TwitchWeb.Source = new Uri(link);
                 TwitchWeb.SourceChanged += TwitchWebOnSourceChanged;
             }));
@@ -310,10 +312,9 @@ namespace TwitchRewardSlideshow.Windows {
 
         private void TwitchWebOnSourceChanged(object sender, CoreWebView2SourceChangedEventArgs e) {
             if (TwitchWeb.Source.Host.Equals("localhost")) {
-                string oauth = TwitchInfo.GetOAuth(TwitchWeb.Source.AbsoluteUri);
-                TwitchUsersData usersData =
-                    JsonConvert.DeserializeObject<TwitchUsersData>(TwitchInfo.GetUserInfo(oauth));
-                if (!TwitchInfo.SaveData(oauth, usersData)) return;
+                string oauth = TwitchUtilities.GetOAuth(TwitchWeb.Source.AbsoluteUri);
+                ValidateAccessTokenResponse info = TwitchUtilities.GetUserOAuthInfo(oauth);
+                if (!TwitchUtilities.SaveData(oauth, info)) return;
                 App.twitch.RestartAll();
                 alreadyTryGetToken = true;
             }
@@ -347,5 +348,9 @@ namespace TwitchRewardSlideshow.Windows {
             }
         }
         #endregion
+
+        private void ClickResetToken(object sender, RoutedEventArgs e) {
+            TwitchUtilities.ResetTwitchConfig(App.config.Get<TwitchConfig>());
+        }
     }
 }

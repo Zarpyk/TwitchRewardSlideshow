@@ -36,6 +36,8 @@
                                   "Pon el enlace de la imagen para canjearlo, puedes subirlo a discord y " +
                                   "copiar su link o subirlo a sitios como gyazo.com. " +
                                   "Se recomienda usar una imagen del tamaño: %aspect_ratio%";
+        public string noPermissionMsg = "No hay permiso para esta acción. Intenta reiniciar la aplicación, " +
+                                        "ya que posiblemente haya caducado el token de acceso.";
     }
 
     public class AspectRatio {
