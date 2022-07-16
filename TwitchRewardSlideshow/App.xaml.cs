@@ -32,7 +32,7 @@ namespace TwitchRewardSlideshow {
 
         public const string devName = "GuerreroBit";
         public const string productName = "TwitchRewardSlideshow";
-        public const string version = "2.11";
+        public const string version = "2.12";
 
         private Timer _imageTimer;
         private const int imageTimerInterval = 1000;
