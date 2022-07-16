@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using TwitchLib.Api;
 using TwitchLib.Api.Auth;
@@ -77,7 +78,8 @@ namespace TwitchRewardSlideshow.Utilities.TwitchUtilities {
                     ["client_id"] = twitchConfig.clientId,
                     ["token"] = twitchConfig.oauth
                 });
-                http.DefaultRequestHeaders.Add("Content-Type", "application/x-www-form-urlencoded");
+                http.DefaultRequestHeaders.Accept
+                    .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));
                 try {
                     Task.Run(async () => await http.PostAsync("https://id.twitch.tv/oauth2/revoke", content));
                 } catch (Exception) {

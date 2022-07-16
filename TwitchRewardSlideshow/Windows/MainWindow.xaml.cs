@@ -351,6 +351,8 @@ namespace TwitchRewardSlideshow.Windows {
 
         private void ClickResetToken(object sender, RoutedEventArgs e) {
             TwitchUtilities.ResetTwitchConfig(App.config.Get<TwitchConfig>());
+            App.ShowError("Reinicia la app", false);
+            Environment.Exit(0);
         }
     }
 }
